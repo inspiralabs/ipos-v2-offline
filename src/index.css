@@ -1,0 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Palet base didefinisikan di tailwind.config.js (maroon/gold/cream/surface/charcoal). */
+
+/* --color-primary/-light: warna tema, default maroon. Diubah runtime lewat lib/theme.ts (Pengaturan > Tema Warna). */
+:root {
+  --color-primary: #6e150f;
+  --color-primary-light: #b92a1c;
+}
+
+/* Tema untuk react-day-picker (DatePicker) — ikut --color-primary */
+.rdp-maroon {
+  --rdp-accent-color: var(--color-primary);
+  --rdp-accent-background-color: #f3e0dd;
+  --rdp-today-color: var(--color-primary-light);
+  --rdp-font-family: inherit;
+  --rdp-day-width: 2.25rem;
+  --rdp-day-height: 2.25rem;
+}
+.rdp-maroon .rdp-day_button:hover { background: #f3e0dd; }
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+    overscroll-behavior: none;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'tnum';
+  }
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Modal slide-up dari bawah (HP), fade untuk backdrop */
+@keyframes sheet-up {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-sheet-up { animation: sheet-up 200ms cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-fade-in { animation: fade-in 150ms ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
