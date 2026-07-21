@@ -55,7 +55,7 @@ export async function exportReportExcel(start: number, end: number): Promise<voi
   const summary = wb.addWorksheet('Ringkasan');
   summary.columns = [{ width: 24 }, { width: 18 }];
   summary.addRow([storeName]).font = { bold: true, size: 14 };
-  summary.addRow([`Periode: ${fmtDate(start)} – ${fmtDate(end)}`]);
+  summary.addRow([`Periode: ${fmtDate(start)} – ${fmtDate(end - 86400_000)}`]);
   summary.addRow([`Dibuat: ${new Date().toLocaleString('id-ID')}`]);
   summary.addRow([]);
 
@@ -162,7 +162,7 @@ export async function exportReportPdf(start: number, end: number): Promise<void>
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(120);
-  doc.text(`Periode: ${fmtDate(start)} - ${fmtDate(end)}`, 14, 33);
+  doc.text(`Periode: ${fmtDate(start)} - ${fmtDate(end - 86400_000)}`, 14, 33);
   doc.setTextColor(0);
 
   let y = 42;

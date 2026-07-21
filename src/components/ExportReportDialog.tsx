@@ -3,6 +3,7 @@ import { FileSpreadsheet, FileText } from 'lucide-react';
 import { Modal } from './Modal';
 import { DatePicker } from './DatePicker';
 import { exportReportExcel, exportReportPdf } from '@/lib/export-report';
+import { toast } from './Toast';
 
 function toRangeMs(startStr: string, endStr: string): [number, number] {
   const start = new Date(startStr + 'T00:00:00').getTime();
@@ -29,6 +30,8 @@ export function ExportReportDialog({ defaultStart, defaultEnd, onClose }: {
       if (kind === 'excel') await exportReportExcel(start, end);
       else await exportReportPdf(start, end);
       onClose();
+    } catch {
+      toast('Gagal membuat file laporan. Coba lagi.', 'error');
     } finally {
       setLoading(null);
     }
