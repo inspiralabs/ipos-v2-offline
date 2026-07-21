@@ -89,11 +89,11 @@ export function MoreScreen({ go }: { go: (s: Screen, opts?: GoOpts) => void }) {
       <header className="bg-card border-b border-border px-4 py-3 shrink-0">
         <h1 className="font-bold text-lg">Lainnya</h1>
       </header>
-      <div className="flex-1 overflow-y-auto p-4 space-y-5 max-w-lg w-full mx-auto">
+      <div className="flex-1 overflow-y-auto p-4 space-y-5 max-w-lg md:max-w-3xl w-full mx-auto">
         {GROUPS.map((g) => (
           <section key={g.title}>
             <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2 px-1">{g.title}</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {g.items.map((it) => {
                 const Icon = it.icon;
                 const delay = i++ * 0.02;
@@ -104,7 +104,7 @@ export function MoreScreen({ go }: { go: (s: Screen, opts?: GoOpts) => void }) {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2, delay, ease: 'easeOut' }}
                     onClick={() => go(it.screen, it.opts)}
-                    className="bg-card rounded-2xl border border-border p-4 text-left shadow-sm hover:shadow-md hover:border-primary/30 active:scale-95 transition min-h-[104px]"
+                    className="bg-card rounded-2xl border border-border p-4 text-left shadow-warm hover:shadow-md hover:border-primary/30 active:scale-95 transition min-h-[104px]"
                   >
                     <span className="w-10 h-10 rounded-xl bg-accent-soft text-primary flex items-center justify-center mb-2">
                       <Icon className="w-5 h-5" aria-hidden />

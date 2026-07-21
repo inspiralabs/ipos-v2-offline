@@ -25,33 +25,7 @@ async function loadStore() {
   };
 }
 
-/**
- * Cetak struk lewat dialog print (kertas thermal 58mm; di Android bisa via RawBT).
- * Desain mengikuti struk ipos-v1: header gradien maroon, blok info, item, total, footer.
- * ponytail: header berwarna tercetak abu di printer thermal monokrom — sama seperti PNG struk v1.
- */
-export async function printReceipt(order: Order): Promise<void> {
-  const { storeName, address, phone, footer, logo } = await loadStore();
-  const isTrial = getLicenseState().plan === 'trial';
-  const debtLeft = order.payment_method === 'debt' ? order.total - (order.cash_received ?? 0) : 0;
-
-  const info = (label: string, value: string) =>
-    `<div class="row info"><span>${label}</span><span>${value}</span></div>`;
-
-  const items = order.items.map((it) => {
-    const { base, variant } = splitVariant(it.product_name);
-    return `
-    <div class="item">
-      <div class="row"><b class="iname">${esc(base)}</b><b class="isub">${formatRp(it.price * it.qty - it.discount)}</b></div>
-      ${variant ? `<div class="variant">▸ ${esc(variant)}</div>` : ''}
-      <div class="row qty"><span>${it.qty} × ${formatRp(it.price)}</span></div>
-      ${it.notes ? `<div class="note">↳ ${esc(it.notes)}</div>` : ''}
-      ${it.discount ? `<div class="row disc"><span>&nbsp;&nbsp;Diskon</span><span>−${formatRp(it.discount)}</span></div>` : ''}
-    </div>`;
-  }).join('');
-
-  const html = `<!doctype html><html><head><meta charset="utf-8"><style>
-    @page { size: 58mm auto; margin: 0; }
+const RECEIPT_STYLE = `
     * { box-sizing: border-box; }
     body { width: 58mm; margin: 0; font: 10px/1.5 -apple-system, 'Segoe UI', sans-serif; color: #1A1A1A; position: relative; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .row { display: flex; justify-content: space-between; gap: 6px; }
@@ -82,8 +56,43 @@ export async function printReceipt(order: Order): Promise<void> {
     .powered { margin-top: 6px; padding-top: 5px; border-top: 1px solid #eee; }
     .powered b { font-size: 8px; color: #b92a1c; letter-spacing: 0.5px; }
     .powered span { display: block; font-size: 7px; color: #999; }
-    .wm { position: absolute; top: 42%; left: 0; right: 0; text-align: center; font-size: 28px; font-weight: bold; opacity: 0.12; transform: rotate(-20deg); }
-  </style></head><body>
+    .wm { position: absolute; top: 42%; left: 0; right: 0; text-align: center; font-size: 28px; font-weight: bold; opacity: 0.12; transform: rotate(-20deg); }`;
+
+/** ponytail: printer thermal kasir umumnya monokrom — override warna jadi hitam/putih/abu saat cetak fisik. */
+const PRINT_MONO_OVERRIDE = `
+    .header { background: #000 !important; color: #fff !important; }
+    .trial-badge { background: #ddd !important; color: #000 !important; }
+    .saddr { color: #ddd !important; }
+    .infoblock, .footer { background: #fff !important; border-color: #000 !important; }
+    .info b, .isub, .variant, .grand, .powered b { color: #000 !important; }
+    .note, .debt { color: #000 !important; font-weight: bold !important; }
+    .disc { color: #444 !important; }
+    .totals { border-color: #000 !important; }
+    .grand { border-color: #000 !important; }
+    .change { color: #000 !important; }
+    .wm { opacity: 0.2 !important; }`;
+
+async function receiptBodyHtml(order: Order): Promise<string> {
+  const { storeName, address, phone, footer, logo } = await loadStore();
+  const isTrial = getLicenseState().plan === 'trial';
+  const debtLeft = order.payment_method === 'debt' ? order.total - (order.cash_received ?? 0) : 0;
+
+  const info = (label: string, value: string) =>
+    `<div class="row info"><span>${label}</span><span>${value}</span></div>`;
+
+  const items = order.items.map((it) => {
+    const { base, variant } = splitVariant(it.product_name);
+    return `
+    <div class="item">
+      <div class="row"><b class="iname">${esc(base)}</b><b class="isub">${formatRp(it.price * it.qty - it.discount)}</b></div>
+      ${variant ? `<div class="variant">▸ ${esc(variant)}</div>` : ''}
+      <div class="row qty"><span>${it.qty} × ${formatRp(it.price)}</span></div>
+      ${it.notes ? `<div class="note">↳ ${esc(it.notes)}</div>` : ''}
+      ${it.discount ? `<div class="row disc"><span>&nbsp;&nbsp;Diskon</span><span>−${formatRp(it.discount)}</span></div>` : ''}
+    </div>`;
+  }).join('');
+
+  return `
     ${isTrial ? '<div class="wm">DEMO</div>' : ''}
     <div class="header">
       ${isTrial ? '<div class="trial-badge">[ TRIAL MODE - INSPIRA POS ]</div>' : ''}
@@ -105,7 +114,7 @@ export async function printReceipt(order: Order): Promise<void> {
     <div class="items">${items}</div>
     <div class="totals">
       <div class="row"><span>Subtotal</span><span>${formatRp(order.subtotal)}</span></div>
-      ${order.discount ? `<div class="row" style="color:#b92a1c"><span>Diskon</span><span>−${formatRp(order.discount)}</span></div>` : ''}
+      ${order.discount ? `<div class="row disc"><span>Diskon</span><span>−${formatRp(order.discount)}</span></div>` : ''}
       <div class="row grand"><span>TOTAL</span><span>${formatRp(order.total)}</span></div>
       <div class="row" style="margin-top:4px"><span>Bayar</span><span>${formatRp(order.cash_received ?? order.total)}</span></div>
       ${debtLeft > 0
@@ -116,8 +125,20 @@ export async function printReceipt(order: Order): Promise<void> {
       <div class="msg">${footer ? esc(footer) : 'Terima kasih!'}</div>
       ${isTrial ? '<div class="msg" style="font-weight:bold">-- STRUK DEMO / MASA COBA --</div>' : ''}
       <div class="powered"><b>✦ Powered by Inspira POS ✦</b><span>inspiralabs.id</span></div>
-    </div>
-  </body></html>`;
+    </div>`;
+}
+
+/**
+ * Cetak struk lewat dialog print (kertas thermal 58mm; di Android bisa via RawBT).
+ * Dicetak hitam-putih karena printer thermal kasir umumnya monokrom; versi warna ada di shareReceiptImage.
+ */
+export async function printReceipt(order: Order): Promise<void> {
+  const body = await receiptBodyHtml(order);
+  const html = `<!doctype html><html><head><meta charset="utf-8"><style>
+    @page { size: 58mm auto; margin: 0; }
+    ${RECEIPT_STYLE}
+    ${PRINT_MONO_OVERRIDE}
+  </style></head><body>${body}</body></html>`;
 
   const frame = document.createElement('iframe');
   frame.style.display = 'none';
@@ -129,8 +150,41 @@ export async function printReceipt(order: Order): Promise<void> {
 }
 
 /**
+ * Render struk jadi gambar PNG (html2canvas) lalu bagikan lewat menu share HP, atau unduh di desktop.
+ */
+export async function shareReceiptImage(order: Order): Promise<void> {
+  const body = await receiptBodyHtml(order);
+  const host = document.createElement('div');
+  host.style.cssText = 'position:fixed;left:-9999px;top:0;';
+  host.innerHTML = `<style>${RECEIPT_STYLE}</style><div id="receipt-capture" style="width:58mm;font:10px/1.5 -apple-system,'Segoe UI',sans-serif;color:#1A1A1A">${body}</div>`;
+  document.body.appendChild(host);
+
+  try {
+    const { default: html2canvas } = await import('html2canvas');
+    const target = host.querySelector<HTMLElement>('#receipt-capture')!;
+    const canvas = await html2canvas(target, { scale: 3, backgroundColor: '#ffffff' });
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) return;
+
+    const file = new File([blob], `struk-${receiptNo(order).slice(1)}.png`, { type: 'image/png' });
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file] }).catch(() => { /* dibatalkan pengguna */ });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  } finally {
+    host.remove();
+  }
+}
+
+/**
  * Bagikan struk sebagai teks lewat menu share HP (WA, dll) — tanpa langganan API apa pun.
- * ponytail: teks, bukan gambar. Kalau mau PNG persis v1, tambah html2canvas.
+ * Untuk versi gambar (PNG), lihat shareReceiptImage.
  */
 export async function shareReceipt(order: Order): Promise<void> {
   const { storeName, address, phone, footer } = await loadStore();

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus, Pencil, Trash2, Lock, PackagePlus, AlertTriangle, Layers } from 'lucide-react';
+import { Plus, Pencil, Trash2, Lock, PackagePlus, AlertTriangle, Layers, Search } from 'lucide-react';
 import { db, type Menu, type VariantGroup } from '@/db';
 import { formatRp } from '@/lib/format';
 import { Modal } from '@/components/Modal';
@@ -50,6 +50,7 @@ export function MenuScreen() {
   const licState = useLicenseStore((s) => s.state);
   const [tab, setTab] = useState<'menu' | 'kategori' | 'variasi'>('menu');
   const [catFilter, setCatFilter] = useState<number | null>(null);
+  const [search, setSearch] = useState('');
   const [modal, setModal] = useState<{ open: boolean; editing: Menu | null }>({ open: false, editing: null });
   const [form, setForm] = useState<MenuForm>(EMPTY);
   const [newCatName, setNewCatName] = useState('');
@@ -62,12 +63,16 @@ export function MenuScreen() {
     []
   ) ?? [];
   const variantGroups = useLiveQuery(() => db.variant_groups.toArray(), []) ?? [];
-  const menus = useLiveQuery(
+  const allMenus = useLiveQuery(
     () => catFilter != null
       ? db.menus.where('category_id').equals(catFilter).toArray()
       : db.menus.toArray(),
     [catFilter]
   ) ?? [];
+  const q = search.trim().toLowerCase();
+  const menus = q
+    ? allMenus.filter((m) => m.name.toLowerCase().includes(q) || (m.sku ?? '').toLowerCase().includes(q))
+    : allMenus;
   const totalMenus = useLiveQuery(() => db.menus.count(), []) ?? 0;
 
   const menuFull = !canAddMenu(licState, totalMenus);
@@ -229,6 +234,19 @@ export function MenuScreen() {
             </div>
           )}
 
+          <div className="px-4 pt-3 pb-2 bg-card border-b border-border shrink-0">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari menu atau SKU…"
+                aria-label="Cari menu"
+                className="w-full border border-border rounded-xl pl-9 pr-3 py-2.5 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+          </div>
+
           {categories.length > 0 && (
             <div className="flex gap-2 px-4 py-2 overflow-x-auto bg-card border-b border-border shrink-0">
               <button
@@ -249,14 +267,14 @@ export function MenuScreen() {
             </div>
           )}
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          <div className="flex-1 overflow-y-auto p-4 space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 md:content-start">
             {menus.length === 0 && (
-              <div className="text-center py-16 px-6">
+              <div className="text-center py-16 px-6 md:col-span-2">
                 <span className="text-4xl block mb-3" aria-hidden>📝</span>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Menu kamu masih kosong. Tambahkan menu pertamamu, yuk!
+                  {q ? `Tidak ada menu yang cocok dengan "${search.trim()}".` : 'Menu kamu masih kosong. Tambahkan menu pertamamu, yuk!'}
                 </p>
-                {!menuFull && (
+                {!menuFull && !q && (
                   <button
                     onClick={openAdd}
                     className="bg-primary text-primary-foreground text-sm font-bold px-5 py-2.5 rounded-xl"
@@ -269,7 +287,7 @@ export function MenuScreen() {
             {menus.map((m) => {
               const lowStock = m.stock != null && m.stock <= (m.min_stock ?? 5);
               return (
-                <div key={m.id} className="bg-card rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm border border-border">
+                <div key={m.id} className="bg-card rounded-xl px-4 py-3 flex items-center gap-3 shadow-warm border border-border">
                   {m.image_url
                     ? <img src={m.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
                     : <span className="text-2xl w-10 text-center shrink-0" aria-hidden>{m.emoji ?? '🍽️'}</span>}
@@ -325,8 +343,8 @@ export function MenuScreen() {
       )}
 
       {tab === 'kategori' && (
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          <div className="flex gap-2">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 md:content-start">
+          <div className="flex gap-2 md:col-span-2">
             <input
               value={newCatName}
               onChange={(e) => setNewCatName(e.target.value)}
@@ -343,12 +361,12 @@ export function MenuScreen() {
             </button>
           </div>
           {categories.length === 0 && (
-            <p className="text-center text-sm text-muted-foreground py-8">
+            <p className="text-center text-sm text-muted-foreground py-8 md:col-span-2">
               Kategori bikin menu gampang dicari — misalnya "Makanan" dan "Minuman".
             </p>
           )}
           {categories.map((c) => (
-            <div key={c.id} className="bg-card rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm border border-border">
+            <div key={c.id} className="bg-card rounded-xl px-4 py-3 flex items-center gap-3 shadow-warm border border-border">
               <span className="flex-1 text-sm font-semibold">{c.name}</span>
               <button onClick={() => deleteCategory(c.id!)} aria-label={`Hapus kategori ${c.name}`}
                 className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-muted">
@@ -360,9 +378,9 @@ export function MenuScreen() {
       )}
 
       {tab === 'variasi' && (
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div className="flex-1 overflow-y-auto p-4 space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0 md:content-start">
           {variantGroups.length === 0 && (
-            <div className="text-center py-16 px-6">
+            <div className="text-center py-16 px-6 md:col-span-2">
               <Layers className="w-10 h-10 text-muted-foreground mx-auto mb-3" aria-hidden />
               <p className="text-sm text-muted-foreground">
                 Grup variasi bisa dipakai di banyak menu sekaligus — misalnya "Level Pedas" untuk semua menu pedas.
@@ -371,7 +389,7 @@ export function MenuScreen() {
             </div>
           )}
           {variantGroups.map((g) => (
-            <div key={g.id} className="bg-card rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm border border-border">
+            <div key={g.id} className="bg-card rounded-xl px-4 py-3 flex items-center gap-3 shadow-warm border border-border">
               <span className="w-9 h-9 rounded-lg bg-accent-soft text-primary flex items-center justify-center shrink-0">
                 <Layers className="w-4 h-4" aria-hidden />
               </span>
@@ -399,12 +417,12 @@ export function MenuScreen() {
       )}
 
       {modal.open && (
-        <Modal onClose={() => setModal({ open: false, editing: null })}>
+        <Modal wide onClose={() => setModal({ open: false, editing: null })}>
           <div className="px-6 pt-5 pb-4 border-b border-border">
             <h2 className="font-bold text-lg">{modal.editing ? 'Ubah Menu' : 'Menu Baru'}</h2>
           </div>
-          <div className="px-6 py-4 space-y-3">
-            <div className="flex items-center gap-3">
+          <div className="px-6 py-4 space-y-3 md:grid md:grid-cols-2 md:gap-x-4 md:gap-y-3 md:space-y-0 md:items-start">
+            <div className="flex items-center gap-3 md:col-span-2">
               <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center overflow-hidden shrink-0">
                 {form.image_url
                   ? <img src={form.image_url} alt="Foto menu" className="w-full h-full object-cover" />
@@ -498,7 +516,7 @@ export function MenuScreen() {
                 />
               </div>
             </div>
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium mb-1.5" htmlFor="menuDesc">Deskripsi (opsional)</label>
               <textarea
                 id="menuDesc"
@@ -509,7 +527,7 @@ export function MenuScreen() {
                 className="w-full border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
               />
             </div>
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium mb-1.5">
                 Variasi (opsional){form.variantGroupIds.length > 0 && (
                   <span className="text-primary font-normal"> — {form.variantGroupIds.length} dipilih</span>
@@ -559,7 +577,7 @@ export function MenuScreen() {
                 </div>
               )}
             </div>
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium mb-1.5" htmlFor="menuDiscType">Diskon otomatis (opsional)</label>
               <p className="text-xs text-muted-foreground mb-2">
                 Diskon ini otomatis kepakai tiap kasir menjual menu ini — tanpa perlu diisi manual di keranjang.
@@ -600,7 +618,7 @@ export function MenuScreen() {
                 />
               )}
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 md:col-span-2">
               <div className="flex-1">
                 <label className="block text-sm font-medium mb-1.5" htmlFor="menuStock">Stok</label>
                 <input
@@ -628,10 +646,10 @@ export function MenuScreen() {
                 />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground md:col-span-2">
               Stok kosong = masakan dibuat terus, nggak perlu dihitung. Stok berkurang otomatis tiap penjualan.
             </p>
-            <label className="flex items-center gap-2 cursor-pointer min-h-[44px]">
+            <label className="flex items-center gap-2 cursor-pointer min-h-[44px] md:col-span-2">
               <input
                 type="checkbox"
                 checked={form.is_active}

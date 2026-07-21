@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { CheckCircle2, Printer, Share2, Star } from 'lucide-react';
+import { CheckCircle2, Image, Printer, QrCode, Share2, Star } from 'lucide-react';
 import { db, type Order, type PayMethod } from '@/db';
 import { useCartStore, getCartTotals } from '@/store/pos';
 import { useLicenseStore } from '@/store/license';
@@ -8,7 +8,8 @@ import { useSessionStore } from '@/store/session';
 import { getLicenseState, saveLicenseState } from '@/lib/license';
 import { hasFeature } from '@/lib/plan';
 import { formatRp } from '@/lib/format';
-import { printReceipt, shareReceipt } from '@/lib/receipt';
+import { printReceipt, shareReceipt, shareReceiptImage } from '@/lib/receipt';
+import { getSetting, KEYS } from '@/lib/store-settings';
 import { Modal } from '@/components/Modal';
 import { RupiahInput } from '@/components/RupiahInput';
 
@@ -35,9 +36,15 @@ export function CheckoutModal({ onClose }: { onClose: () => void }) {
   const [dpInput, setDpInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState<Order | null>(null);
+  const [qrisImage, setQrisImage] = useState('');
+  const [qrisZoom, setQrisZoom] = useState(false);
 
   const canDebt = hasFeature(licState, 'customers_debt');
   const customers = useLiveQuery(() => db.customers.toArray(), []) ?? [];
+
+  useEffect(() => {
+    getSetting(KEYS.qrisImage).then((v) => setQrisImage(v ?? ''));
+  }, []);
 
   const cashReceived = method === 'cash' ? Number(cashInput) : method === 'debt' ? Number(dpInput) || 0 : total;
   const change = method === 'cash' ? Math.max(0, cashReceived - total) : 0;
@@ -151,6 +158,12 @@ export function CheckoutModal({ onClose }: { onClose: () => void }) {
             >
               <Share2 className="w-4 h-4" aria-hidden /> Bagikan
             </button>
+            <button
+              onClick={() => shareReceiptImage(done)}
+              className="flex-1 flex items-center justify-center gap-2 border border-border font-bold py-3 rounded-xl text-sm hover:bg-muted"
+            >
+              <Image className="w-4 h-4" aria-hidden /> Gambar
+            </button>
           </div>
           <button
             onClick={closeDone}
@@ -164,6 +177,7 @@ export function CheckoutModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
+    <>
     <Modal onClose={onClose}>
       <div className="px-6 pt-5 pb-4 border-b border-border">
         <h2 className="font-bold text-lg">Pembayaran</h2>
@@ -294,6 +308,24 @@ export function CheckoutModal({ onClose }: { onClose: () => void }) {
             </div>
           )
         )}
+
+        {method === 'qris' && (
+          <div className="bg-accent-soft rounded-xl p-4 text-center">
+            {qrisImage ? (
+              <button type="button" onClick={() => setQrisZoom(true)} className="block mx-auto">
+                <img src={qrisImage} alt="Kode QRIS — tap untuk perbesar" className="w-40 h-40 object-contain rounded-lg" />
+              </button>
+            ) : (
+              <div className="w-40 h-40 mx-auto flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                <QrCode className="w-10 h-10" aria-hidden />
+                <p className="text-xs">QRIS belum diatur — atur di Pengaturan</p>
+              </div>
+            )}
+            {qrisImage && (
+              <p className="text-xs text-muted-foreground mt-2">Tunjukkan ke pembeli untuk discan</p>
+            )}
+          </div>
+        )}
       </div>
       <div className="px-6 pb-5 flex gap-3">
         <button
@@ -311,5 +343,14 @@ export function CheckoutModal({ onClose }: { onClose: () => void }) {
         </button>
       </div>
     </Modal>
+    {qrisZoom && qrisImage && (
+      <Modal onClose={() => setQrisZoom(false)}>
+        <div className="p-6">
+          <img src={qrisImage} alt="Kode QRIS" className="w-full aspect-square object-contain rounded-lg" />
+          <p className="text-center text-sm text-muted-foreground mt-3">Tunjukkan ke pembeli untuk discan</p>
+        </div>
+      </Modal>
+    )}
+    </>
   );
 }

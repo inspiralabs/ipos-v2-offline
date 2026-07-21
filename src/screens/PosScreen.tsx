@@ -147,7 +147,7 @@ export function PosScreen() {
                     key={p.id}
                     onClick={() => tapProduct(p)}
                     disabled={soldOut}
-                    className={`bg-card rounded-xl p-3 text-left shadow-sm border border-border transition ${
+                    className={`bg-card rounded-xl p-3 text-left shadow-warm border border-border transition ${
                       soldOut ? 'opacity-50' : 'hover:shadow-md active:scale-95'
                     }`}
                   >
@@ -534,8 +534,9 @@ function CartBody({ onPay, onSaveBill }: { onPay: () => void; onSaveBill: () => 
                   <input
                     id="cartTable"
                     value={tableNumber}
-                    onChange={(e) => setTable(e.target.value)}
+                    onChange={(e) => setTable(e.target.value.replace(/\D/g, ''))}
                     placeholder="No. meja"
+                    inputMode="numeric"
                     className="w-full border border-border rounded-lg px-2.5 py-2 text-sm bg-card focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Download, Printer, Star, Ban, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, Printer, Star, Ban, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { db, type Debt } from '@/db';
 import { formatRp } from '@/lib/format';
 import { useLicenseStore } from '@/store/license';
@@ -76,6 +76,7 @@ function SalesTab() {
   const [dateStr, setDateStr] = useState(localDateStr);
   const [range, setRange] = useState<7 | 30>(7);
   const [selBar, setSelBar] = useState<number | null>(null);
+  const [showMarginInfo, setShowMarginInfo] = useState(false);
 
   const dayStart = new Date(dateStr + 'T00:00:00').getTime();
   const dayEnd = dayStart + DAY_MS;
@@ -102,6 +103,7 @@ function SalesTab() {
   const totalSales = paid.reduce((sum, o) => sum + o.total, 0);
   const totalHpp = paid.reduce((s, o) => s + o.items.reduce((x, i) => x + i.hpp * i.qty, 0), 0);
   const totalExpense = dayExpenses.reduce((s, e) => s + e.amount, 0);
+  const noHppNames = new Set(paid.flatMap((o) => o.items.filter((i) => i.hpp === 0).map((i) => i.product_name)));
   const avg = paid.length ? Math.round(totalSales / paid.length) : 0;
 
   const byMethod = paid.reduce<Record<string, number>>((acc, o) => {
@@ -136,6 +138,10 @@ function SalesTab() {
     return { start, total };
   });
   const maxDay = Math.max(...days.map((d) => d.total), 1);
+  const rangeSales = rangePaid.reduce((s, o) => s + o.total, 0);
+  const rangeHpp = rangePaid.reduce((s, o) => s + o.items.reduce((x, i) => x + i.hpp * i.qty, 0), 0);
+  const rangeMargin = rangeSales > 0 ? Math.round(((rangeSales - rangeHpp) / rangeSales) * 100) : null;
+  const rangeNoHppCount = new Set(rangePaid.flatMap((o) => o.items.filter((i) => i.hpp === 0).map((i) => i.product_name))).size;
 
   const fmtTime = (ts: number) =>
     new Date(ts).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -205,8 +211,8 @@ function SalesTab() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-lg w-full mx-auto">
-      <div className="flex items-center gap-2 print:hidden">
+    <div className="flex-1 overflow-y-auto p-4 space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start max-w-lg md:max-w-3xl w-full mx-auto">
+      <div className="flex items-center gap-2 print:hidden md:col-span-2">
         {/* Navigasi hari: kasir hampir selalu geser sehari-sehari; kalender native untuk lompat jauh */}
         <div className="flex items-center bg-card border border-border rounded-xl overflow-hidden">
           <button
@@ -243,7 +249,7 @@ function SalesTab() {
       </div>
 
       {/* Ringkasan hari */}
-      <div className="bg-card rounded-2xl p-5 shadow-sm border border-border">
+      <div className="bg-card rounded-2xl p-5 shadow-warm border border-border">
         <p className="text-sm text-muted-foreground mb-1">Uang masuk hari ini</p>
         <p className="text-3xl font-extrabold text-primary tabular-nums mb-3">{formatRp(totalSales)}</p>
         <div className="flex gap-4 text-sm flex-wrap">
@@ -255,11 +261,21 @@ function SalesTab() {
 
       {/* Laba rugi sederhana */}
       {(totalHpp > 0 || totalExpense > 0) && (
-        <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-2">
+        <div className="bg-card rounded-2xl p-5 shadow-warm border border-border space-y-2">
           <h3 className="text-sm font-bold mb-1">Untung-rugi hari ini</h3>
           <Row label="Omzet" value={formatRp(totalSales)} />
           <Row label="Modal terjual (HPP)" value={`−${formatRp(totalHpp)}`} />
-          <Row label="Laba kotor" value={formatRp(totalSales - totalHpp)} bold />
+          <Row
+            label="Laba kotor"
+            value={formatRp(totalSales - totalHpp)}
+            sub={totalSales > 0 ? (
+              <button onClick={() => setShowMarginInfo(true)} className="inline-flex items-center gap-0.5 text-success">
+                Margin {Math.round(((totalSales - totalHpp) / totalSales) * 100)}%
+                <Info className="w-3 h-3" aria-hidden />
+              </button>
+            ) : undefined}
+            bold
+          />
           <Row label="Pengeluaran" value={`−${formatRp(totalExpense)}`} />
           <hr className="border-border" />
           <div className="flex justify-between font-extrabold">
@@ -268,12 +284,17 @@ function SalesTab() {
               {formatRp(totalSales - totalHpp - totalExpense)}
             </span>
           </div>
+          {noHppNames.size > 0 && (
+            <p className="text-xs text-warning font-normal pt-1">
+              ⚠ Modal {noHppNames.size} menu belum diisi ({[...noHppNames].slice(0, 2).join(', ')}{noHppNames.size > 2 ? ', dll' : ''}) — margin di atas belum akurat. Isi harga beli lewat Produk → Isi Stok.
+            </p>
+          )}
         </div>
       )}
 
       {/* Grafik omzet */}
-      <div className="bg-card rounded-2xl p-5 shadow-sm border border-border">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-card rounded-2xl p-5 shadow-warm border border-border">
+        <div className="flex items-center justify-between mb-1">
           <h3 className="text-sm font-bold">Omzet {range} hari terakhir</h3>
           <div className="flex gap-1 print:hidden">
             {([7, 30] as const).map((r) => (
@@ -287,6 +308,20 @@ function SalesTab() {
             ))}
           </div>
         </div>
+        {rangeMargin != null && (
+          <div className="mb-3">
+            <button
+              onClick={() => setShowMarginInfo(true)}
+              className="inline-flex items-center gap-1 bg-accent-soft text-primary text-xs font-extrabold px-3 py-1 rounded-full"
+            >
+              Margin rata² {rangeMargin}%
+              <Info className="w-3 h-3" aria-hidden />
+            </button>
+            {rangeNoHppCount > 0 && (
+              <p className="text-xs text-warning mt-1">⚠ {rangeNoHppCount} menu belum ada data modal — margin belum akurat.</p>
+            )}
+          </div>
+        )}
         {/* Tooltip: nilai hari yang di-tap (mobile tak punya hover) */}
         <div className="h-8 mb-1 flex items-center justify-center">
           {selBar != null && days[selBar] && (
@@ -330,7 +365,7 @@ function SalesTab() {
 
       {/* Per kasir */}
       {Object.keys(byCashier).length > 1 && (
-        <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-2">
+        <div className="bg-card rounded-2xl p-5 shadow-warm border border-border space-y-2">
           <h3 className="text-sm font-bold mb-1">Per kasir</h3>
           {Object.entries(byCashier).map(([name, c]) => (
             <div key={name} className="flex justify-between text-sm">
@@ -343,7 +378,7 @@ function SalesTab() {
 
       {/* Menu terlaris */}
       {topProducts.length > 0 && (
-        <div className="bg-card rounded-2xl p-5 shadow-sm border border-border">
+        <div className="bg-card rounded-2xl p-5 shadow-warm border border-border">
           <h3 className="text-sm font-bold mb-3">Paling laku hari ini</h3>
           <div className="space-y-2.5">
             {topProducts.map((p, i) => (
@@ -362,7 +397,7 @@ function SalesTab() {
 
       {/* Metode pembayaran */}
       {Object.keys(byMethod).length > 0 && (
-        <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-2">
+        <div className="bg-card rounded-2xl p-5 shadow-warm border border-border space-y-2">
           <h3 className="text-sm font-bold mb-1">Uang masuk lewat mana?</h3>
           {(['cash', 'qris', 'transfer', 'debt'] as const).filter((m) => byMethod[m]).map((m) => (
             <div key={m} className="flex justify-between text-sm">
@@ -375,19 +410,19 @@ function SalesTab() {
 
       {/* Daftar transaksi */}
       {orders.length === 0 ? (
-        <div className="text-center py-10 px-6">
+        <div className="text-center py-10 px-6 md:col-span-2">
           <span className="text-4xl block mb-3" aria-hidden>🧾</span>
           <p className="text-sm text-muted-foreground">
             Belum ada penjualan di tanggal ini. Begitu ada yang beli, catatannya muncul di sini.
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-2 md:col-span-2">
           <h3 className="text-sm font-bold">Semua transaksi</h3>
           {[...orders].filter((o) => o.status !== 'open').sort((a, b) => b.created_at - a.created_at).map((o) => (
             <div
               key={o.id}
-              className="bg-card rounded-xl px-4 py-3 shadow-sm border border-border flex items-center gap-2"
+              className="bg-card rounded-xl px-4 py-3 shadow-warm border border-border flex items-center gap-2"
             >
               <div className="flex-1 min-w-0">
                 <p className={`text-sm font-bold tabular-nums ${o.status === 'void' ? 'line-through text-muted-foreground' : ''}`}>
@@ -417,15 +452,57 @@ function SalesTab() {
           ))}
         </div>
       )}
+
+      {showMarginInfo && <MarginInfoModal onClose={() => setShowMarginInfo(false)} />}
     </div>
   );
 }
 
-function Row({ label, value, bold = false }: { label: string; value: string; bold?: boolean }) {
+function MarginInfoModal({ onClose }: { onClose: () => void }) {
+  return (
+    <Modal onClose={onClose}>
+      <div className="px-6 pt-5 pb-4 border-b border-border">
+        <h2 className="font-bold text-lg">Apa itu Margin?</h2>
+      </div>
+      <div className="px-6 py-4 space-y-3 text-sm">
+        <p>
+          Margin adalah <b>berapa persen dari uang penjualan yang jadi untung kotor</b> —
+          sebelum dikurangi pengeluaran lain seperti listrik atau gaji.
+        </p>
+        <div className="bg-accent-soft rounded-xl p-4">
+          <p className="font-semibold mb-1">Contoh:</p>
+          <p className="text-muted-foreground">Modal Rp 5.000, dijual Rp 10.000</p>
+          <p className="text-muted-foreground">→ Untung Rp 5.000</p>
+          <p className="font-bold text-primary mt-1">→ Margin = 5.000 ÷ 10.000 = 50%</p>
+        </div>
+        <p className="text-muted-foreground">
+          Ini beda dengan cara hitung "untung 2x lipat modal" (istilahnya <b>markup</b>, bukan margin) —
+          untuk contoh di atas, markup-nya 100% padahal margin-nya cuma 50%. Margin dihitung dari{' '}
+          <b>harga jual</b>, markup dihitung dari <b>modal</b>.
+        </p>
+        <p className="bg-warning/10 text-warning rounded-xl p-3 text-xs">
+          ⚠ Angka margin di sini dihitung dari modal yang sudah diisi lewat <b>Produk → Isi Stok</b> (harga beli).
+          Kalau modal sebuah menu belum pernah diisi, dianggap Rp 0 — jadi margin-nya bisa muncul 100% padahal
+          belum tentu benar-benar untung segitu. Isi modal semua menu biar angkanya akurat.
+        </p>
+      </div>
+      <div className="px-6 pb-5">
+        <button onClick={onClose} className="w-full bg-primary text-primary-foreground font-bold py-3 rounded-xl text-sm">
+          Mengerti
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function Row({ label, value, sub, bold = false }: { label: string; value: string; sub?: ReactNode; bold?: boolean }) {
   return (
     <div className={`flex justify-between text-sm ${bold ? 'font-bold' : ''}`}>
       <span className={bold ? '' : 'text-muted-foreground'}>{label}</span>
-      <span className="tabular-nums">{value}</span>
+      <span className="text-right">
+        <span className="tabular-nums block">{value}</span>
+        {sub && <span className="block text-xs font-semibold">{sub}</span>}
+      </span>
     </div>
   );
 }
@@ -444,8 +521,8 @@ function DebtTab() {
   const fmtDate = (ts: number) => new Date(ts).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-lg w-full mx-auto">
-      <div className="bg-card rounded-2xl p-5 shadow-sm border border-border">
+    <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-lg md:max-w-2xl w-full mx-auto">
+      <div className="bg-card rounded-2xl p-5 shadow-warm border border-border">
         <p className="text-sm text-muted-foreground mb-1">Total piutang belum dibayar</p>
         <p className="text-3xl font-extrabold text-warning tabular-nums">{formatRp(totalOutstanding)}</p>
       </div>
@@ -460,7 +537,7 @@ function DebtTab() {
       ) : (
         <div className="space-y-2">
           {debts.map((d) => (
-            <div key={d.id} className="bg-card rounded-xl px-4 py-3 shadow-sm border border-border flex items-center gap-3">
+            <div key={d.id} className="bg-card rounded-xl px-4 py-3 shadow-warm border border-border flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold truncate">{d.customer_name}</p>
                 <p className="text-xs text-muted-foreground">
@@ -592,8 +669,8 @@ function ExpenseTab() {
   const fmtDate = (ts: number) => new Date(ts).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-lg w-full mx-auto">
-      <div className="bg-card rounded-2xl p-5 shadow-sm border border-border flex items-center gap-3">
+    <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-lg md:max-w-2xl w-full mx-auto">
+      <div className="bg-card rounded-2xl p-5 shadow-warm border border-border flex items-center gap-3">
         <div className="flex-1">
           <p className="text-sm text-muted-foreground mb-1">Pengeluaran bulan ini</p>
           <p className="text-3xl font-extrabold text-destructive tabular-nums">{formatRp(totalMonth)}</p>
@@ -616,7 +693,7 @@ function ExpenseTab() {
       ) : (
         <div className="space-y-2">
           {expenses.map((e) => (
-            <div key={e.id} className="bg-card rounded-xl px-4 py-3 shadow-sm border border-border flex items-center gap-3">
+            <div key={e.id} className="bg-card rounded-xl px-4 py-3 shadow-warm border border-border flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold truncate">{e.category}{e.notes ? ` · ${e.notes}` : ''}</p>
                 <p className="text-xs text-muted-foreground">{fmtDate(e.created_at)} · {METHOD_LABEL[e.method]}</p>

@@ -35,7 +35,7 @@ export function StockReportScreen({ onBack }: { onBack: () => void }) {
               aria-selected={tab === id}
               onClick={() => setTab(id)}
               className={`flex-1 px-3 py-2 rounded-lg text-sm font-bold transition ${
-                tab === id ? 'bg-card shadow-sm text-primary' : 'text-muted-foreground'
+                tab === id ? 'bg-card shadow-warm text-primary' : 'text-muted-foreground'
               }`}
             >
               {label}
@@ -93,7 +93,7 @@ function CurrentStockTab() {
             const out = m.stock === 0;
             const low = !out && m.stock != null && m.stock <= (m.min_stock ?? 5);
             return (
-              <div key={m.id} className="bg-card rounded-xl px-4 py-3 shadow-sm border border-border flex items-center gap-3">
+              <div key={m.id} className="bg-card rounded-xl px-4 py-3 shadow-warm border border-border flex items-center gap-3">
                 {m.image_url
                   ? <img src={m.image_url} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
                   : <span className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center text-lg shrink-0" aria-hidden>{m.emoji ?? '🍽️'}</span>}
@@ -186,7 +186,7 @@ function MovementsTab() {
       ) : (
         <div className="space-y-2">
           {shown.map((m) => (
-            <div key={m.id} className="bg-card rounded-xl px-4 py-3 shadow-sm border border-border flex items-center gap-3">
+            <div key={m.id} className="bg-card rounded-xl px-4 py-3 shadow-warm border border-border flex items-center gap-3">
               <span className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${m.type === 'in' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
                 {m.type === 'in' ? <ArrowDownCircle className="w-4 h-4" aria-hidden /> : <ArrowUpCircle className="w-4 h-4" aria-hidden />}
               </span>

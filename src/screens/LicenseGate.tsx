@@ -35,7 +35,7 @@ export function LicenseGate() {
 
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center bg-background p-4">
-      <div className="w-full max-w-sm bg-card rounded-2xl shadow-sm border border-border p-6">
+      <div className="w-full max-w-sm bg-card rounded-2xl shadow-warm border border-border p-6">
         <div className="w-14 h-14 rounded-2xl bg-accent-soft text-accent flex items-center justify-center mb-4">
           <Hourglass className="w-7 h-7" aria-hidden />
         </div>

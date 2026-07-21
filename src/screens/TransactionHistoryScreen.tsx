@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ChevronLeft, Printer, Share2, Search, Receipt } from 'lucide-react';
+import { ChevronLeft, Image, Printer, Share2, Search, Receipt } from 'lucide-react';
 import { db } from '@/db';
 import { formatRp } from '@/lib/format';
-import { printReceipt, shareReceipt } from '@/lib/receipt';
+import { printReceipt, shareReceipt, shareReceiptImage } from '@/lib/receipt';
 
 const METHOD_LABEL: Record<string, string> = { cash: 'Tunai', qris: 'QRIS', transfer: 'Transfer', debt: 'Hutang' };
 
@@ -77,7 +77,7 @@ export function TransactionHistoryScreen({ onBack }: { onBack: () => void }) {
               <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2 px-1">{grp.date}</h2>
               <div className="space-y-2">
                 {grp.items.map((o) => (
-                  <div key={o.id} className="bg-card rounded-xl px-4 py-3 shadow-sm border border-border flex items-center gap-2">
+                  <div key={o.id} className="bg-card rounded-xl px-4 py-3 shadow-warm border border-border flex items-center gap-2">
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm font-bold tabular-nums ${o.status === 'void' ? 'line-through text-muted-foreground' : ''}`}>
                         {formatRp(o.total)}
@@ -98,6 +98,10 @@ export function TransactionHistoryScreen({ onBack }: { onBack: () => void }) {
                         <button onClick={() => shareReceipt(o)} aria-label="Bagikan struk"
                           className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted shrink-0">
                           <Share2 className="w-4 h-4" aria-hidden />
+                        </button>
+                        <button onClick={() => shareReceiptImage(o)} aria-label="Bagikan struk sebagai gambar"
+                          className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted shrink-0">
+                          <Image className="w-4 h-4" aria-hidden />
                         </button>
                       </>
                     )}

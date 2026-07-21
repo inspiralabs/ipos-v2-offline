@@ -108,7 +108,7 @@ export function ShiftScreen({ onBack }: { onBack?: () => void }) {
           </span>
         </header>
         <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-lg w-full mx-auto">
-          <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-3">
+          <div className="bg-card rounded-2xl p-5 shadow-warm border border-border space-y-3">
             <Row label="Kasir" value={openShift.cashier_name} />
             <Row label="Mulai jam" value={fmt(openShift.opened_at)} />
             <Row label="Uang awal di laci" value={formatRp(openShift.opening_cash)} />
@@ -127,7 +127,7 @@ export function ShiftScreen({ onBack }: { onBack?: () => void }) {
           </div>
 
           {closing ? (
-            <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-3">
+            <div className="bg-card rounded-2xl p-5 shadow-warm border border-border space-y-3">
               <h3 className="font-bold">Tutup Shift</h3>
               <div>
                 <label className="block text-sm mb-1.5" htmlFor="closingCash">
@@ -186,7 +186,7 @@ export function ShiftScreen({ onBack }: { onBack?: () => void }) {
         <h1 className="font-bold text-lg">Shift</h1>
       </header>
       <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-lg w-full mx-auto">
-        <div className="bg-card rounded-2xl p-6 shadow-sm border border-border w-full max-w-sm mx-auto space-y-4">
+        <div className="bg-card rounded-2xl p-6 shadow-warm border border-border w-full max-w-sm mx-auto space-y-4">
           <div className="text-center">
             <div className="w-14 h-14 rounded-2xl bg-accent-soft text-primary flex items-center justify-center mx-auto mb-3">
               <Clock className="w-7 h-7" aria-hidden />
@@ -261,7 +261,7 @@ function ShiftHistory() {
         // selisih uang laci: yang dihitung saat tutup vs perkiraan (awal + tunai)
         const diff = (s.closing_cash ?? 0) - (s.opening_cash + cash);
         return (
-          <div key={s.id} className="bg-card rounded-xl px-4 py-3 shadow-sm border border-border">
+          <div key={s.id} className="bg-card rounded-xl px-4 py-3 shadow-warm border border-border">
             <div className="flex justify-between text-sm">
               <span className="font-bold">{s.cashier_name}</span>
               <span className="font-extrabold text-primary tabular-nums">{formatRp(total)}</span>

@@ -62,7 +62,7 @@ export function HomeScreen({ go, storeName }: { go: (s: Screen, o?: GoOpts) => v
         <motion.button
           initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
           onClick={() => go('report', { reportTab: 'sales' })}
-          className="w-full text-left bg-primary text-primary-foreground rounded-2xl p-5 shadow-sm active:scale-[0.99] transition"
+          className="w-full text-left bg-primary text-primary-foreground rounded-2xl p-5 shadow-warm active:scale-[0.99] transition"
         >
           <div className="flex items-center justify-between mb-1">
             <span className="text-sm opacity-90">Penjualan hari ini</span>
@@ -118,7 +118,7 @@ export function HomeScreen({ go, storeName }: { go: (s: Screen, o?: GoOpts) => v
           ) : (
             <div className="space-y-2">
               {recent.map((o) => (
-                <div key={o.id} className="bg-card rounded-xl px-4 py-3 shadow-sm border border-border flex items-center gap-3">
+                <div key={o.id} className="bg-card rounded-xl px-4 py-3 shadow-warm border border-border flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-bold tabular-nums ${o.status === 'void' ? 'line-through text-muted-foreground' : ''}`}>
                       {formatRp(o.total)}
@@ -152,7 +152,7 @@ export function HomeScreen({ go, storeName }: { go: (s: Screen, o?: GoOpts) => v
                 <button
                   key={m.id}
                   onClick={() => go('menu')}
-                  className="w-full text-left bg-card rounded-xl px-4 py-3 shadow-sm border border-border flex items-center gap-3 active:scale-[0.99] transition"
+                  className="w-full text-left bg-card rounded-xl px-4 py-3 shadow-warm border border-border flex items-center gap-3 active:scale-[0.99] transition"
                 >
                   {m.image_url
                     ? <img src={m.image_url} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
@@ -180,7 +180,7 @@ function StatCard({ icon: Icon, label, value, tone, onClick }: {
   return (
     <button
       onClick={onClick}
-      className="bg-card rounded-2xl border border-border p-4 text-left shadow-sm active:scale-[0.98] transition"
+      className="bg-card rounded-2xl border border-border p-4 text-left shadow-warm active:scale-[0.98] transition"
     >
       <span className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${tone === 'success' ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
         <Icon className="w-4 h-4" aria-hidden />
@@ -195,7 +195,7 @@ function QuickAction({ icon: Icon, label, onClick }: { icon: LucideIcon; label: 
   return (
     <button
       onClick={onClick}
-      className="bg-card rounded-2xl border border-border p-4 flex flex-col items-center gap-2 shadow-sm hover:border-primary/30 active:scale-95 transition min-h-[88px] justify-center"
+      className="bg-card rounded-2xl border border-border p-4 flex flex-col items-center gap-2 shadow-warm hover:border-primary/30 active:scale-95 transition min-h-[88px] justify-center"
     >
       <span className="w-10 h-10 rounded-xl bg-accent-soft text-primary flex items-center justify-center">
         <Icon className="w-5 h-5" aria-hidden />

@@ -1,18 +1,20 @@
 /** @type {import('tailwindcss').Config} */
 
 // Palet base Inspira POS — sumber kebenaran warna brand.
+// Token warna & radius mengikuti docs/design handoff ipos offline (maroon/gold, DM Sans).
 const palette = {
   maroon: {
     deep: '#6e150f',
+    pressed: '#4a0e0a',
     vibrant: '#b92a1c',
   },
   gold: {
     antique: '#d0a139',
     bright: '#fad64a',
   },
-  cream: '#F5EFE6',
+  cream: '#FFF9F2',
   surface: '#FFFFFF',
-  charcoal: '#1A1A1A',
+  charcoal: '#2B211B',
 };
 
 export default {
@@ -20,7 +22,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
       },
       colors: {
         ...palette,
@@ -28,12 +30,13 @@ export default {
         background: palette.cream,
         foreground: palette.charcoal,
         card: palette.surface,
-        muted: '#ECE3D3',
-        'muted-foreground': '#6D5F55',
+        muted: '#F0E4D6',
+        'muted-foreground': '#8A7B6F',
         primary: {
           // var(...) dengan fallback ke maroon default — pilihan tema disetel runtime, lihat lib/theme.ts
           DEFAULT: 'var(--color-primary, #6e150f)',
           light: 'var(--color-primary-light, #b92a1c)',
+          pressed: palette.maroon.pressed,
           foreground: palette.cream,
         },
         accent: {
@@ -44,11 +47,18 @@ export default {
         success: '#15803D',
         warning: '#B45309',
         destructive: '#BB1C1C',
-        border: '#E3D9C6',
+        border: '#F0E4D6',
+        disabled: {
+          DEFAULT: '#E5D8C8',
+          foreground: '#a89a8a',
+        },
       },
       borderRadius: {
-        xl: '0.75rem',
+        xl: '0.875rem',
         '2xl': '1rem',
+      },
+      boxShadow: {
+        warm: '0 2px 8px rgba(43,33,27,.06)',
       },
     },
   },

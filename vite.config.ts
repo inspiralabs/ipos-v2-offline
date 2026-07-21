@@ -31,7 +31,7 @@ export default defineConfig({
         short_name: 'Inspira POS',
         description: 'Aplikasi kasir yang jalan tanpa internet. Data aman di HP kamu.',
         theme_color: '#6e150f',
-        background_color: '#F5EFE6',
+        background_color: '#FFF9F2',
         display: 'standalone',
         orientation: 'portrait',
         icons: [

@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import {
   Store, KeyRound, DownloadCloud, UploadCloud, PlayCircle, MessageCircle, Check,
   Printer, ShieldCheck, Users, Truck, Star, AlertTriangle, Trash2, Contact, ChevronLeft, Palette,
+  QrCode,
 } from 'lucide-react';
 import { db } from '@/db';
 import { useLicenseStore } from '@/store/license';
@@ -120,10 +121,10 @@ export function SettingsScreen({ onReplayTour, focus, onBack }: {
         <h1 className="font-bold text-lg">{(focus && FOCUS_TITLE[focus]) || 'Pengaturan'}</h1>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 max-w-lg w-full mx-auto">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start max-w-lg md:max-w-3xl w-full mx-auto">
 
         {!focus && backupDue && (
-          <div className="bg-warning/10 border border-warning/30 rounded-2xl px-4 py-3 flex items-start gap-2 text-sm">
+          <div className="md:col-span-2 bg-warning/10 border border-warning/30 rounded-2xl px-4 py-3 flex items-start gap-2 text-sm">
             <AlertTriangle className="w-4 h-4 text-warning shrink-0 mt-0.5" aria-hidden />
             <p className="text-foreground">
               {lastBackup === 0
@@ -379,12 +380,15 @@ export function SettingsScreen({ onReplayTour, focus, onBack }: {
 function ReceiptSection() {
   const [footer, setFooter] = useState('');
   const [logo, setLogo] = useState('');
+  const [qris, setQris] = useState('');
   const [saved, setSaved] = useState(false);
   const logoRef = useRef<HTMLInputElement>(null);
+  const qrisRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     getSetting(KEYS.receiptFooter).then((v) => setFooter(v ?? ''));
     getSetting(KEYS.storeLogo).then((v) => setLogo(v ?? ''));
+    getSetting(KEYS.qrisImage).then((v) => setQris(v ?? ''));
   }, []);
 
   async function save() {
@@ -399,6 +403,16 @@ function ReceiptSection() {
       const url = String(reader.result);
       setLogo(url);
       await setSetting(KEYS.storeLogo, url);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function pickQris(file: File) {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const url = String(reader.result);
+      setQris(url);
+      await setSetting(KEYS.qrisImage, url);
     };
     reader.readAsDataURL(file);
   }
@@ -444,6 +458,28 @@ function ReceiptSection() {
           <input
             ref={logoRef} type="file" accept="image/*" className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) pickLogo(f); e.target.value = ''; }}
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-3 mb-3">
+        <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center overflow-hidden shrink-0">
+          {qris ? <img src={qris} alt="Kode QRIS" className="w-full h-full object-contain" /> : <QrCode className="w-6 h-6 text-muted-foreground" aria-hidden />}
+        </div>
+        <div className="flex-1">
+          <button onClick={() => qrisRef.current?.click()} className="text-sm text-primary font-semibold">
+            {qris ? 'Ganti gambar QRIS' : 'Pasang gambar QRIS'}
+          </button>
+          {qris && (
+            <button
+              onClick={async () => { setQris(''); await setSetting(KEYS.qrisImage, ''); }}
+              className="block text-sm text-muted-foreground"
+            >
+              Hapus gambar QRIS
+            </button>
+          )}
+          <input
+            ref={qrisRef} type="file" accept="image/*" className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) pickQris(f); e.target.value = ''; }}
           />
         </div>
       </div>

@@ -21,6 +21,7 @@ export const KEYS = {
   ownerRecoveryCode: 'owner_recovery_code',
   receiptFooter: 'receipt_footer',
   storeLogo: 'store_logo',
+  qrisImage: 'qris_image',
   themeColor: 'theme_color',
   lastBackupAt: 'last_backup_at',
 } as const;
