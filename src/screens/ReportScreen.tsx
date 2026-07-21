@@ -15,6 +15,7 @@ import { Select } from '@/components/Select';
 import { DatePicker } from '@/components/DatePicker';
 import { toast } from '@/components/Toast';
 import { confirmDialog } from '@/components/dialogs';
+import { ExportReportDialog } from '@/components/ExportReportDialog';
 
 const DAY_MS = 86400_000;
 const METHOD_LABEL: Record<string, string> = { cash: 'Tunai', qris: 'QRIS', transfer: 'Transfer', debt: 'Hutang' };
@@ -77,6 +78,7 @@ function SalesTab() {
   const [range, setRange] = useState<7 | 30>(7);
   const [selBar, setSelBar] = useState<number | null>(null);
   const [showMarginInfo, setShowMarginInfo] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const dayStart = new Date(dateStr + 'T00:00:00').getTime();
   const dayEnd = dayStart + DAY_MS;
@@ -168,43 +170,6 @@ function SalesTab() {
     }
   }
 
-  async function exportExcel() {
-    // exceljs di-load saat dibutuhkan saja (chunk terpisah) — pola yang sama dengan ipos-v1
-    const { Workbook } = await import('exceljs');
-    const wb = new Workbook();
-    const ws = wb.addWorksheet(`Laporan ${dateStr}`);
-    ws.columns = [{ width: 20 }, { width: 14 }, { width: 10 }, { width: 8 }, { width: 12 }, { width: 12 }, { width: 12 }];
-    ws.addRow(['Waktu', 'Kasir', 'Metode', 'Status', 'Subtotal', 'Potongan', 'Total']);
-    ws.getRow(1).font = { bold: true };
-    for (const o of orders) {
-      ws.addRow([
-        new Date(o.created_at).toLocaleString('id-ID'),
-        o.cashier_name,
-        METHOD_LABEL[o.payment_method] ?? o.payment_method,
-        o.status === 'paid' ? 'Lunas' : o.status === 'void' ? 'Batal' : 'Open',
-        o.subtotal, o.discount, o.total,
-      ]);
-    }
-    ws.addRow([]);
-    for (const [label, val] of [
-      ['Omzet', totalSales],
-      ['Modal (HPP)', totalHpp],
-      ['Laba kotor', totalSales - totalHpp],
-      ['Pengeluaran', totalExpense],
-      ['Laba bersih', totalSales - totalHpp - totalExpense],
-    ] as const) {
-      const r = ws.addRow([label, '', '', '', '', '', val]);
-      r.font = { bold: true };
-    }
-    const buf = await wb.xlsx.writeBuffer();
-    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `laporan-${dateStr}.xlsx`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }
-
   function printClosing() {
     const expenseTotal = rangeExpenses.reduce((s, e) => s + e.amount, 0);
     void printClosingReport(range, dayEnd, rangePaid, expenseTotal);
@@ -234,16 +199,10 @@ function SalesTab() {
         </div>
         <div className="ml-auto flex gap-2">
           <button
-            onClick={exportExcel}
+            onClick={() => setExportOpen(true)}
             className="flex items-center gap-1.5 border border-border rounded-xl px-3 py-2 text-sm font-semibold hover:bg-muted"
           >
-            <Download className="w-4 h-4" aria-hidden /> Excel
-          </button>
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-1.5 border border-border rounded-xl px-3 py-2 text-sm font-semibold hover:bg-muted"
-          >
-            <Printer className="w-4 h-4" aria-hidden /> PDF
+            <Download className="w-4 h-4" aria-hidden /> Export
           </button>
         </div>
       </div>
@@ -454,6 +413,13 @@ function SalesTab() {
       )}
 
       {showMarginInfo && <MarginInfoModal onClose={() => setShowMarginInfo(false)} />}
+      {exportOpen && (
+        <ExportReportDialog
+          defaultStart={dateStr}
+          defaultEnd={dateStr}
+          onClose={() => setExportOpen(false)}
+        />
+      )}
     </div>
   );
 }
