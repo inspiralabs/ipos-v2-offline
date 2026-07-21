@@ -142,3 +142,82 @@ export async function exportReportExcel(start: number, end: number): Promise<voi
   a.click();
   URL.revokeObjectURL(a.href);
 }
+
+export async function exportReportPdf(start: number, end: number): Promise<void> {
+  const { storeName, orders, expenses, totalSales, totalHpp, totalExpense } = await loadRangeData(start, end);
+  const grossProfit = totalSales - totalHpp;
+  const netProfit = grossProfit - totalExpense;
+
+  const { jsPDF } = await import('jspdf');
+  const { autoTable } = await import('jspdf-autotable');
+
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const rp = (n: number) => `Rp ${n.toLocaleString('id-ID')}`;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text(storeName, 14, 18);
+  doc.setFontSize(12);
+  doc.text('Laporan Penjualan', 14, 26);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(120);
+  doc.text(`Periode: ${fmtDate(start)} - ${fmtDate(end)}`, 14, 33);
+  doc.setTextColor(0);
+
+  let y = 42;
+  const plLine = (label: string, value: string, bold = false) => {
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    doc.text(label, 14, y);
+    doc.text(value, 196, y, { align: 'right' });
+    y += 6;
+  };
+  plLine('Omzet', rp(totalSales));
+  plLine('Modal (HPP)', `-${rp(totalHpp)}`);
+  plLine('Laba kotor', rp(grossProfit), true);
+  plLine('Pengeluaran', `-${rp(totalExpense)}`);
+  plLine('Laba bersih', rp(netProfit), true);
+  y += 4;
+
+  const headerStyles = { fillColor: [110, 21, 15] as [number, number, number], textColor: 255 };
+
+  autoTable(doc, {
+    startY: y,
+    head: [['Tanggal', 'Jam', 'Kasir', 'Metode', 'Total']],
+    body: orders.map((o) => [
+      fmtDate(o.created_at),
+      fmtTime(o.created_at),
+      o.cashier_name,
+      METHOD_LABEL[o.payment_method] ?? o.payment_method,
+      rp(o.total),
+    ]),
+    headStyles: headerStyles,
+    styles: { fontSize: 9 },
+    margin: { left: 14, right: 14 },
+  });
+
+  if (expenses.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- jspdf-autotable augments doc at runtime; no public type for lastAutoTable
+    const afterOrders = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('Pengeluaran', 14, afterOrders);
+
+    autoTable(doc, {
+      startY: afterOrders + 4,
+      head: [['Tanggal', 'Kategori', 'Metode', 'Nominal', 'Catatan']],
+      body: expenses.map((e) => [
+        fmtDate(e.created_at),
+        e.category,
+        METHOD_LABEL[e.method as PayMethod] ?? e.method,
+        rp(e.amount),
+        e.notes ?? '',
+      ]),
+      headStyles: headerStyles,
+      styles: { fontSize: 9 },
+      margin: { left: 14, right: 14 },
+    });
+  }
+
+  doc.save(`laporan-${start}-${end}.pdf`);
+}
