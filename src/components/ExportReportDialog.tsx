@@ -19,6 +19,8 @@ export function ExportReportDialog({ defaultStart, defaultEnd, onClose }: {
   const [startStr, setStartStr] = useState(defaultStart);
   const [endStr, setEndStr] = useState(defaultEnd);
   const [loading, setLoading] = useState<'excel' | 'pdf' | null>(null);
+  // Portal target untuk popover DatePicker — lihat komentar di Modal.tsx untuk alasannya.
+  const [modalCard, setModalCard] = useState<HTMLDivElement | null>(null);
 
   const invalid = !startStr || !endStr || startStr > endStr;
 
@@ -38,18 +40,18 @@ export function ExportReportDialog({ defaultStart, defaultEnd, onClose }: {
   }
 
   return (
-    <Modal onClose={onClose}>
+    <Modal ref={setModalCard} onClose={onClose}>
       <div className="px-6 pt-5 pb-4 border-b border-border">
         <h2 className="font-bold text-lg">Export Laporan</h2>
       </div>
       <div className="px-6 py-4 space-y-3">
         <div>
           <label className="block text-sm font-medium mb-1.5">Dari tanggal</label>
-          <DatePicker value={startStr} onChange={setStartStr} max={endStr} label="Dari tanggal" />
+          <DatePicker value={startStr} onChange={setStartStr} max={endStr} label="Dari tanggal" portalContainer={modalCard} />
         </div>
         <div>
           <label className="block text-sm font-medium mb-1.5">Sampai tanggal</label>
-          <DatePicker value={endStr} onChange={setEndStr} label="Sampai tanggal" />
+          <DatePicker value={endStr} onChange={setEndStr} label="Sampai tanggal" portalContainer={modalCard} />
         </div>
         {invalid && (
           <p className="text-sm text-destructive">Rentang tanggal tidak valid — tanggal awal harus sebelum atau sama dengan tanggal akhir.</p>
