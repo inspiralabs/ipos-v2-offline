@@ -1,0 +1,11 @@
+services:
+  offline:
+    build:
+      context: .
+      args:
+        VITE_SECURE_SALT_LITE: ${VITE_SECURE_SALT_LITE}
+        VITE_SECURE_SALT_PRO: ${VITE_SECURE_SALT_PRO}
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_ADMIN_WA: ${VITE_ADMIN_WA}
+    ports:
+      - "8080:80"
