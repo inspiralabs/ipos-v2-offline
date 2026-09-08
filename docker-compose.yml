@@ -8,4 +8,4 @@ services:
         VITE_API_URL: ${VITE_API_URL}
         VITE_ADMIN_WA: ${VITE_ADMIN_WA}
     ports:
-      - "8080:80"
+      - "8081:80"
