@@ -11,6 +11,7 @@ import { registerClient } from '@/lib/sync';
 import { importBackup } from '@/lib/backup';
 import { confirmDialog } from '@/components/dialogs';
 import { toast } from '@/components/Toast';
+import { InstallCard } from '@/components/InstallCard';
 
 interface Slide {
   icon: LucideIcon;
@@ -285,6 +286,10 @@ export function Onboarding({ onDone, tourOnly = false }: { onDone: () => void; t
                   Belum yakin? Lewati saja — menu bisa diisi sendiri kapan pun di tab Menu.
                 </p>
               )}
+
+              <div className="mt-5">
+                <InstallCard />
+              </div>
             </div>
           )}
         </div>
