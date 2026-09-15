@@ -24,12 +24,13 @@ import { StockReportScreen } from '@/screens/StockReportScreen';
 import { TransactionHistoryScreen } from '@/screens/TransactionHistoryScreen';
 import { SettingsScreen } from '@/screens/SettingsScreen';
 import { MoreScreen } from '@/screens/MoreScreen';
+import { GuideScreen } from '@/screens/GuideScreen';
 import { TrialBadge } from '@/components/TrialBadge';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
 
 export type Screen =
   | 'home' | 'pos' | 'menu' | 'shift' | 'report' | 'more'
-  | 'settings' | 'txhistory' | 'stockreport';
+  | 'settings' | 'txhistory' | 'stockreport' | 'guide';
 export interface GoOpts { reportTab?: ReportTab; focus?: string }
 
 // Kasir hanya Kasir/Produk/Shift; owner dapat Beranda + hub Lainnya (Shift ada di dalamnya).
@@ -48,7 +49,7 @@ const KASIR_NAV: { id: Screen; label: string; icon: LucideIcon }[] = [
 ];
 
 // Sub-halaman yang dibuka dari hub Lainnya → tab Lainnya tetap menyala + tombol kembali.
-const SUBPAGES: Screen[] = ['settings', 'shift', 'txhistory', 'stockreport'];
+const SUBPAGES: Screen[] = ['settings', 'shift', 'txhistory', 'stockreport', 'guide'];
 
 export default function App() {
   const valid = useLicenseStore((s) => s.valid);
@@ -58,7 +59,6 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('home');
   const [reportTab, setReportTab] = useState<ReportTab>('sales');
   const [settingsFocus, setSettingsFocus] = useState<string | undefined>();
-  const [tourReplay, setTourReplay] = useState(false);
 
   // Navigasi dari hub Lainnya: bisa langsung ke tab laporan / bagian pengaturan tertentu.
   function go(s: Screen, opts?: GoOpts) {
@@ -86,7 +86,6 @@ export default function App() {
 
   if (onboardingDone === undefined || userCount === undefined) return null;
   if (onboardingDone !== '1') return <Onboarding onDone={() => { /* liveQuery re-render */ }} />;
-  if (tourReplay) return <Onboarding tourOnly onDone={() => setTourReplay(false)} />;
   if (!valid) return <LicenseGate />;
   // multi-user aktif → wajib pilih siapa yang jaga (Pro)
   if (userCount > 0 && !sessionUser) return <LockScreen />;
@@ -95,7 +94,7 @@ export default function App() {
   const nav = isKasir ? KASIR_NAV : OWNER_NAV;
   // Kasir tak boleh buka layar owner walau state terlanjur ke sana — 'shift' dikecualikan,
   // itu ada di KASIR_NAV sendiri (kasir boleh buka/tutup shift-nya sendiri).
-  const ownerScreens: Screen[] = ['home', 'report', 'more', 'settings', 'txhistory', 'stockreport'];
+  const ownerScreens: Screen[] = ['home', 'report', 'more', 'settings', 'txhistory', 'stockreport', 'guide'];
   const activeScreen = isKasir && ownerScreens.includes(screen) ? 'pos' : screen;
   // Sub-halaman dibuka lewat hub → tab Lainnya tetap menyala
   const activeNav = SUBPAGES.includes(activeScreen) ? 'more' : activeScreen;
@@ -127,11 +126,11 @@ export default function App() {
         {activeScreen === 'more' && <MoreScreen go={go} />}
         {activeScreen === 'settings' && (
           <SettingsScreen
-            onReplayTour={() => setTourReplay(true)}
             focus={settingsFocus}
             onBack={() => setScreen('more')}
           />
         )}
+        {activeScreen === 'guide' && <GuideScreen onBack={() => setScreen('more')} />}
       </div>
 
       <UpdatePrompt />

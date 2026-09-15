@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
-  Store, KeyRound, DownloadCloud, UploadCloud, PlayCircle, MessageCircle, Check,
+  Store, KeyRound, DownloadCloud, UploadCloud, MessageCircle, Check,
   Printer, ShieldCheck, Users, Truck, Star, AlertTriangle, Trash2, Contact, ChevronLeft, Palette,
   QrCode,
 } from 'lucide-react';
@@ -27,11 +27,10 @@ import { InstallCard } from '@/components/InstallCard';
 const FOCUS_TITLE: Record<string, string> = {
   profile: 'Profil Usaha', receipt: 'Struk', pin: 'PIN Owner', users: 'Kasir',
   customers: 'Pelanggan', suppliers: 'Supplier', license: 'Versi & Aktivasi',
-  backup: 'Amankan Data', guide: 'Panduan', install: 'Install ke HP',
+  backup: 'Amankan Data', install: 'Install ke HP',
 };
 
-export function SettingsScreen({ onReplayTour, focus, onBack }: {
-  onReplayTour: () => void;
+export function SettingsScreen({ focus, onBack }: {
   focus?: string; // hanya render satu bagian; kosong = semua
   onBack?: () => void;
 }) {
@@ -352,24 +351,6 @@ export function SettingsScreen({ onReplayTour, focus, onBack }: {
             />
           </div>
           {backupMsg && <p className="text-sm mt-2 text-muted-foreground">{backupMsg}</p>}
-        </section>
-        )}
-
-        {/* Panduan */}
-        {show('guide') && (
-        <section id="guide" className="bg-card rounded-2xl border border-border p-5">
-          <h2 className="font-bold text-sm mb-1 flex items-center gap-2">
-            <PlayCircle className="w-4 h-4 text-primary" aria-hidden /> Panduan
-          </h2>
-          <p className="text-sm text-muted-foreground mb-3">
-            Mau lihat lagi perkenalan aplikasi dan info masa coba?
-          </p>
-          <button
-            onClick={onReplayTour}
-            className="w-full border border-border font-bold py-2.5 rounded-xl text-sm hover:bg-muted"
-          >
-            Putar Ulang Perkenalan
-          </button>
         </section>
         )}
 
