@@ -1,23 +1,27 @@
-import { forwardRef, type ReactNode } from 'react';
+import { forwardRef, useEffect, useRef, type ReactNode } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { motion, useDragControls } from 'motion/react';
 
-/**
- * Radix Dialog + motion. Sheet dari bawah di HP (tarik gagangnya ke bawah untuk tutup),
- * center di layar lebar. Esc / tap backdrop = tutup. API tidak berubah dari versi lama.
- * ponytail: animasi masuk saja — animasi keluar butuh AnimatePresence di semua pemanggil.
- *
- * `ref` menunjuk ke kartu modal (bukan wrapper full-screen-nya) — dipakai sebagai portal
- * container untuk popover (mis. DatePicker) yang dirender di dalam modal ini. Tanpa ini,
- * Radix Dialog menganggap popover yang portal ke document.body sebagai elemen "di luar"
- * dialog dan menonaktifkan klik di dalamnya (lihat aria-hidden's hideOthers).
- */
+
 export const Modal = forwardRef<HTMLDivElement, {
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
 }>(function Modal({ onClose, children, wide = false }, ref) {
   const drag = useDragControls();
+  const closedByPopRef = useRef(false);
+
+  useEffect(() => {
+    history.pushState({ ...history.state, iposModal: true }, '');
+    const onPopState = () => { closedByPopRef.current = true; onClose(); };
+    window.addEventListener('popstate', onPopState);
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+      if (!closedByPopRef.current) history.back();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <Dialog.Root open onOpenChange={(o) => { if (!o) onClose(); }}>
       <Dialog.Portal>
