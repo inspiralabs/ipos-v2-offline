@@ -4,6 +4,7 @@ import App from './App';
 import { Toasts } from './components/Toast';
 import { DialogHost } from './components/dialogs';
 import { applyCachedTheme } from './lib/theme';
+import './lib/install-prompt';
 import './index.css';
 
 applyCachedTheme();
