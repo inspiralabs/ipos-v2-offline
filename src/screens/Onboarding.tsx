@@ -11,7 +11,8 @@ import { registerClient } from '@/lib/sync';
 import { importBackup } from '@/lib/backup';
 import { confirmDialog } from '@/components/dialogs';
 import { toast } from '@/components/Toast';
-import { InstallCard } from '@/components/InstallCard';
+import { InstallPopup } from '@/components/InstallPopup';
+import { useInstallPromptStore } from '@/lib/install-prompt';
 
 interface Slide {
   icon: LucideIcon;
@@ -67,6 +68,8 @@ export function Onboarding({ onDone, tourOnly = false }: { onDone: () => void; t
   const [withSample, setWithSample] = useState(true);
   const [saving, setSaving] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [showInstallPopup, setShowInstallPopup] = useState(false);
+  const installed = useInstallPromptStore((s) => s.installed);
   const restoreRef = useRef<HTMLInputElement>(null);
 
   const limitStep = SLIDES.length; // 5
@@ -286,10 +289,6 @@ export function Onboarding({ onDone, tourOnly = false }: { onDone: () => void; t
                   Belum yakin? Lewati saja — menu bisa diisi sendiri kapan pun di tab Menu.
                 </p>
               )}
-
-              <div className="mt-5">
-                <InstallCard />
-              </div>
             </div>
           )}
         </div>
@@ -326,7 +325,12 @@ export function Onboarding({ onDone, tourOnly = false }: { onDone: () => void; t
               </button>
             ) : (
               <button
-                onClick={finish}
+                onClick={() => {
+                  // Ajak install dulu sebelum benar-benar masuk ke aplikasi — tapi cuma di
+                  // onboarding asli (bukan tourOnly) dan cuma kalau belum ke-install.
+                  if (!tourOnly && !installed) setShowInstallPopup(true);
+                  else finish();
+                }}
                 disabled={!canNext || saving}
                 className="flex-1 h-12 bg-primary text-primary-foreground font-bold rounded-xl text-sm disabled:opacity-40"
               >
@@ -355,6 +359,9 @@ export function Onboarding({ onDone, tourOnly = false }: { onDone: () => void; t
           e.target.value = '';
         }}
       />
+      {showInstallPopup && (
+        <InstallPopup onClose={() => { setShowInstallPopup(false); finish(); }} />
+      )}
     </div>
   );
 }
