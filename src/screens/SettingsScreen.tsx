@@ -22,11 +22,12 @@ import { Select } from '@/components/Select';
 import { toast } from '@/components/Toast';
 import { confirmDialog } from '@/components/dialogs';
 import { Modal } from '@/components/Modal';
+import { InstallCard } from '@/components/InstallCard';
 
 const FOCUS_TITLE: Record<string, string> = {
   profile: 'Profil Usaha', receipt: 'Struk', pin: 'PIN Owner', users: 'Kasir',
   customers: 'Pelanggan', suppliers: 'Supplier', license: 'Versi & Aktivasi',
-  backup: 'Amankan Data', guide: 'Panduan',
+  backup: 'Amankan Data', guide: 'Panduan', install: 'Install ke HP',
 };
 
 export function SettingsScreen({ onReplayTour, focus, onBack }: {
@@ -371,6 +372,8 @@ export function SettingsScreen({ onReplayTour, focus, onBack }: {
           </button>
         </section>
         )}
+
+        {show('install') && <InstallCard />}
       </div>
     </div>
   );

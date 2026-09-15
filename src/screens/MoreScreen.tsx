@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import {
   Store, HandCoins, Wallet, Contact, Truck, Users, Printer, ShieldCheck,
   DownloadCloud, KeyRound, PlayCircle, Receipt, Boxes, Clock, HardDrive,
-  RefreshCw, type LucideIcon,
+  RefreshCw, Smartphone, type LucideIcon,
 } from 'lucide-react';
 import type { Screen, GoOpts } from '@/App';
 import { usePwaUpdateStore, checkForUpdate } from '@/lib/pwa-update';
@@ -46,6 +46,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
       { icon: DownloadCloud, label: 'Amankan Data', desc: 'Backup & pulihkan', screen: 'settings', opts: { focus: 'backup' } },
       { icon: KeyRound, label: 'Versi & Aktivasi', desc: 'Lite / Pro, kode lisensi', screen: 'settings', opts: { focus: 'license' } },
       { icon: PlayCircle, label: 'Panduan', desc: 'Putar ulang perkenalan', screen: 'settings', opts: { focus: 'guide' } },
+      { icon: Smartphone, label: 'Install ke HP', desc: 'Pasang di layar utama', screen: 'settings', opts: { focus: 'install' } },
     ],
   },
 ];
