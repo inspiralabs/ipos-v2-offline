@@ -42,8 +42,11 @@ export function isIOS(): boolean {
 export async function promptInstall(): Promise<boolean> {
   const { deferredEvent } = useInstallPromptStore.getState();
   if (!deferredEvent) return false;
-  await deferredEvent.prompt();
-  const { outcome } = await deferredEvent.userChoice;
-  useInstallPromptStore.setState({ deferredEvent: null });
-  return outcome === 'accepted';
+  try {
+    await deferredEvent.prompt();
+    const { outcome } = await deferredEvent.userChoice;
+    return outcome === 'accepted';
+  } finally {
+    useInstallPromptStore.setState({ deferredEvent: null });
+  }
 }

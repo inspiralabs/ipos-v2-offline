@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import type { Screen, GoOpts } from '@/App';
 import { usePwaUpdateStore, checkForUpdate } from '@/lib/pwa-update';
+import { useInstallPromptStore } from '@/lib/install-prompt';
 import { toast } from '@/components/Toast';
 
 interface Item {
@@ -61,6 +62,7 @@ export function MoreScreen({ go }: { go: (s: Screen, opts?: GoOpts) => void }) {
   const [storage, setStorage] = useState<{ usage: number; quota: number } | null>(null);
   const [checking, setChecking] = useState(false);
   const needRefresh = usePwaUpdateStore((s) => s.needRefresh);
+  const installed = useInstallPromptStore((s) => s.installed);
 
   useEffect(() => {
     navigator.storage?.estimate?.().then((e) =>
@@ -95,7 +97,7 @@ export function MoreScreen({ go }: { go: (s: Screen, opts?: GoOpts) => void }) {
           <section key={g.title}>
             <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground mb-2 px-1">{g.title}</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {g.items.map((it) => {
+              {g.items.filter((it) => it.opts?.focus !== 'install' || !installed).map((it) => {
                 const Icon = it.icon;
                 const delay = i++ * 0.02;
                 return (
