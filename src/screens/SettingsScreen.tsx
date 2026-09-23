@@ -248,6 +248,9 @@ export function SettingsScreen({ focus, onBack }: {
                   onChange={(e) => setLicKey(e.target.value)}
                   placeholder="XXXX-XXXX-XXXX-XXXX"
                   autoCapitalize="characters"
+                  autoCorrect="off"
+                  autoComplete="off"
+                  spellCheck={false}
                   className="w-full border border-border rounded-xl px-3 py-2.5 text-sm font-mono uppercase tracking-widest mb-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
                 {licMsg && (
@@ -291,6 +294,9 @@ export function SettingsScreen({ focus, onBack }: {
                     onChange={(e) => setLicKey(e.target.value)}
                     placeholder="XXXX-XXXX-XXXX-XXXX"
                     autoCapitalize="characters"
+                    autoCorrect="off"
+                    autoComplete="off"
+                    spellCheck={false}
                     className="w-full border border-border rounded-xl px-3 py-2.5 text-sm font-mono uppercase tracking-widest mb-2 focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                   {licMsg && (

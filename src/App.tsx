@@ -31,6 +31,9 @@ import { UpdatePrompt } from '@/components/UpdatePrompt';
 export type Screen =
   | 'home' | 'pos' | 'menu' | 'shift' | 'report' | 'more'
   | 'settings' | 'txhistory' | 'stockreport' | 'guide';
+const isScreen = (value: unknown): value is Screen =>
+  typeof value === 'string' && ['home', 'pos', 'menu', 'shift', 'report', 'more', 'settings', 'txhistory', 'stockreport', 'guide'].includes(value);
+
 export interface GoOpts { reportTab?: ReportTab; focus?: string }
 
 // Kasir hanya Kasir/Produk/Shift; owner dapat Beranda + hub Lainnya (Shift ada di dalamnya).
@@ -56,7 +59,7 @@ export default function App() {
   const refresh = useLicenseStore((s) => s.refresh);
   const sessionUser = useSessionStore((s) => s.user);
   const logout = useSessionStore((s) => s.logout);
-  const [screen, setScreen] = useState<Screen>('home');
+  const [screen, setScreen] = useState<Screen>(() => isScreen(history.state?.iposScreen) ? history.state.iposScreen : 'home');
   const [reportTab, setReportTab] = useState<ReportTab>('sales');
   const [settingsFocus, setSettingsFocus] = useState<string | undefined>();
 
@@ -65,7 +68,41 @@ export default function App() {
     if (opts?.reportTab) setReportTab(opts.reportTab);
     setSettingsFocus(opts?.focus);
     setScreen(s);
+    history.pushState({
+      ...history.state,
+      iposApp: true,
+      iposScreen: s,
+      reportTab: opts?.reportTab ?? reportTab,
+      settingsFocus: opts?.focus,
+    }, '');
+
   }
+  function backToMore() {
+    setSettingsFocus(undefined);
+    setScreen('more');
+    history.replaceState({
+      ...history.state,
+      iposApp: true,
+      iposScreen: 'more',
+      settingsFocus: undefined,
+    }, '');
+  }
+  // Keep browser Back inside the single-page app instead of leaving it after
+  // moving between Beranda, Produk, and Lainnya.
+  useEffect(() => {
+    if (history.state?.iposApp !== true) {
+      history.replaceState({ ...history.state, iposApp: true, iposScreen: screen }, '');
+    }
+    const onPopState = (event: PopStateEvent) => {
+      const next = event.state?.iposScreen;
+      if (!isScreen(next)) return;
+      setScreen(next);
+      if (event.state?.reportTab) setReportTab(event.state.reportTab as ReportTab);
+      setSettingsFocus(event.state?.settingsFocus);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   // Cek status trial ke server saat online (best-effort, PRD §5.3 step 4)
   useEffect(() => {
@@ -119,18 +156,18 @@ export default function App() {
         {activeScreen === 'home' && <HomeScreen go={go} storeName={storeName || ''} />}
         {activeScreen === 'pos' && <PosScreen />}
         {activeScreen === 'menu' && <MenuScreen />}
-        {activeScreen === 'shift' && <ShiftScreen onBack={!isKasir ? () => setScreen('more') : undefined} />}
+        {activeScreen === 'shift' && <ShiftScreen onBack={!isKasir ? backToMore : undefined} />}
         {activeScreen === 'report' && <ReportScreen initialTab={reportTab} />}
-        {activeScreen === 'txhistory' && <TransactionHistoryScreen onBack={() => setScreen('more')} />}
-        {activeScreen === 'stockreport' && <StockReportScreen onBack={() => setScreen('more')} />}
+        {activeScreen === 'txhistory' && <TransactionHistoryScreen onBack={backToMore} />}
+        {activeScreen === 'stockreport' && <StockReportScreen onBack={backToMore} />}
         {activeScreen === 'more' && <MoreScreen go={go} />}
         {activeScreen === 'settings' && (
           <SettingsScreen
             focus={settingsFocus}
-            onBack={() => setScreen('more')}
+            onBack={backToMore}
           />
         )}
-        {activeScreen === 'guide' && <GuideScreen onBack={() => setScreen('more')} />}
+        {activeScreen === 'guide' && <GuideScreen onBack={backToMore} />}
       </div>
 
       <UpdatePrompt />

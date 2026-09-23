@@ -32,10 +32,15 @@ async function deriveKey(deviceId: string, plan: 'lite' | 'pro'): Promise<string
   return `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}-${raw.slice(12, 16)}`;
 }
 
+/** Accept codes copied with spaces or typographic dash characters. */
+export function normalizeLicenseKey(key: string): string {
+  return key.trim().toUpperCase().replace(/\s+/g, '').replace(/[‐‑‒–—]/g, '-');
+}
+
 export async function validateLicense(key: string): Promise<LicensePlan | null> {
   const deviceId = getDeviceId();
   for (const plan of ['lite', 'pro'] as const) {
-    if ((await deriveKey(deviceId, plan)) === key.trim().toUpperCase()) return plan;
+    if ((await deriveKey(deviceId, plan)) === normalizeLicenseKey(key)) return plan;
   }
   return null;
 }
@@ -83,7 +88,7 @@ export async function activateLicense(key: string): Promise<LicensePlan | null> 
   const state = getLicenseState();
   const updated: LicenseState = { ...state, plan, expiresAt: null };
   saveLicenseState(updated);
-  localStorage.setItem('ipos_license_key', key.toUpperCase());
+  localStorage.setItem('ipos_license_key', normalizeLicenseKey(key));
   return plan;
 }
 

@@ -10,14 +10,39 @@ export const Modal = forwardRef<HTMLDivElement, {
 }>(function Modal({ onClose, children, wide = false }, ref) {
   const drag = useDragControls();
   const closedByPopRef = useRef(false);
+  const modalIdRef = useRef<string>();
+  const cleanupTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    history.pushState({ ...history.state, iposModal: true }, '');
-    const onPopState = () => { closedByPopRef.current = true; onClose(); };
+    const modalId = modalIdRef.current ?? (modalIdRef.current = crypto.randomUUID());
+    if (cleanupTimerRef.current !== null) {
+      window.clearTimeout(cleanupTimerRef.current);
+      cleanupTimerRef.current = null;
+    }
+
+    // React StrictMode runs setup → cleanup → setup once in development.
+    // Reuse the first entry during that probe instead of stacking a second one.
+    if (history.state?.iposModalId !== modalId) {
+      history.pushState({ ...history.state, iposModal: true, iposModalId: modalId }, '');
+    }
+
+    const onPopState = (event: PopStateEvent) => {
+      // A nested modal was popped: only the nested modal closes. The parent
+      // remains mounted on the history entry now at the top.
+      if (event.state?.iposModalId === modalId) return;
+      closedByPopRef.current = true;
+      onClose();
+    };
     window.addEventListener('popstate', onPopState);
     return () => {
       window.removeEventListener('popstate', onPopState);
-      if (!closedByPopRef.current) history.back();
+      if (!closedByPopRef.current) {
+        // Defer so StrictMode's immediate second setup can cancel this.
+        cleanupTimerRef.current = window.setTimeout(() => {
+          cleanupTimerRef.current = null;
+          if (history.state?.iposModalId === modalId) history.back();
+        }, 0);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

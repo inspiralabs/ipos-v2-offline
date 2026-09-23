@@ -61,6 +61,9 @@ export function LicenseGate() {
               onChange={(e) => setKey(e.target.value)}
               placeholder="XXXX-XXXX-XXXX-XXXX"
               autoCapitalize="characters"
+              autoCorrect="off"
+              autoComplete="off"
+              spellCheck={false}
               className="w-full border border-border rounded-xl px-3 py-3 text-sm font-mono uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </div>

@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, Minus, Plus, ShoppingCart, ReceiptText, Star, StickyNote, Tag, Trash2, ChevronDown, User } from 'lucide-react';
 import { db, type Menu, type OrderItem, type VariantGroup } from '@/db';
 import { useCartStore, getCartTotals, keyOf } from '@/store/pos';
@@ -26,6 +26,7 @@ export function PosScreen() {
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState<number | null>(null);
   const [showCheckout, setShowCheckout] = useState(false);
+  const [checkoutAfterCartClose, setCheckoutAfterCartClose] = useState(false);
   const [showCartSheet, setShowCartSheet] = useState(false);
   const [variantMenu, setVariantMenu] = useState<Menu | null>(null);
   const [showBills, setShowBills] = useState(false);
@@ -58,9 +59,27 @@ export function PosScreen() {
   }
 
   function openPay() {
-    setShowCartSheet(false);
+    if (showCartSheet) {
+      // Let the cart modal remove its browser-history entry before mounting
+      // the checkout modal. Mounting both in one render makes history.back()
+      // close the newly opened checkout instead.
+      setShowCartSheet(false);
+      setCheckoutAfterCartClose(true);
+      return;
+    }
     setShowCheckout(true);
   }
+
+  useEffect(() => {
+    if (!checkoutAfterCartClose || showCartSheet) return;
+    const onCartClosed = (event: PopStateEvent) => {
+      if (event.state?.iposModalId) return;
+      setCheckoutAfterCartClose(false);
+      setShowCheckout(true);
+    };
+    window.addEventListener('popstate', onCartClosed);
+    return () => window.removeEventListener('popstate', onCartClosed);
+  }, [checkoutAfterCartClose, showCartSheet]);
 
   async function saveBill() {
     // sudah diisi lewat panel pelanggan & meja di keranjang → langsung simpan tanpa tanya ulang
