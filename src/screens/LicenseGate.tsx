@@ -3,6 +3,7 @@ import { Hourglass, MessageCircle, ShieldCheck } from 'lucide-react';
 import { activateLicense, TRIAL_LIMITS, ADMIN_WA, waLink } from '@/lib/license';
 import { useLicenseStore } from '@/store/license';
 import { getDeviceId } from '@/lib/device';
+import { CopyDeviceCode } from '@/components/CopyDeviceCode';
 
 /**
  * Layar penuh saat masa coba selesai (waktu habis / kuota transaksi terpakai).
@@ -24,7 +25,7 @@ export function LicenseGate() {
     try {
       const plan = await activateLicense(key.trim());
       if (!plan) {
-        setError('Kode ini tidak cocok untuk HP ini. Cek lagi hurufnya, atau tanyakan ke admin ya.');
+        setError('Kode ini tidak cocok untuk HP ini. Minta admin generate ulang dari Kode HP di bawah, bukan dari nama toko.');
         return;
       }
       refresh();
@@ -81,9 +82,7 @@ export function LicenseGate() {
           <p className="text-sm text-muted-foreground mb-3">
             Belum punya kode? Beli sekali bayar — bukan langganan. Kirim kode HP di bawah ini ke admin:
           </p>
-          <p className="text-sm font-mono bg-muted rounded-xl px-3 py-2.5 mb-3 select-all text-center">
-            {getDeviceId()}
-          </p>
+          <CopyDeviceCode className="mb-3" />
           {ADMIN_WA && (
             <a
               href={waLink(`Halo, masa coba Inspira POS saya sudah selesai dan saya mau lanjut. Kode HP saya: ${getDeviceId()}`)}

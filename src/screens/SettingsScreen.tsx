@@ -13,6 +13,7 @@ import {
 } from '@/lib/license';
 import { hasFeature } from '@/lib/plan';
 import { getDeviceId } from '@/lib/device';
+import { CopyDeviceCode } from '@/components/CopyDeviceCode';
 import { getSetting, setSetting, askOwnerPin, KEYS } from '@/lib/store-settings';
 import { THEMES, applyTheme, type ThemeId } from '@/lib/theme';
 import { BUSINESS_TYPES } from '@/lib/dummy';
@@ -87,7 +88,7 @@ export function SettingsScreen({ focus, onBack }: {
     try {
       const plan = await activateLicense(licKey.trim());
       if (!plan) {
-        setLicMsg({ ok: false, text: 'Kode ini tidak cocok untuk HP ini. Cek lagi, atau tanyakan ke admin ya.' });
+        setLicMsg({ ok: false, text: 'Kode ini tidak cocok untuk HP ini. Minta admin generate ulang dari Kode HP di bawah, bukan dari nama toko.' });
         return;
       }
       setLicMsg({ ok: true, text: `Berhasil! Aplikasi kamu sekarang versi ${plan === 'pro' ? 'Pro' : 'Lite'} — tanpa batas waktu.` });
@@ -314,10 +315,7 @@ export function SettingsScreen({ focus, onBack }: {
             </>
           )}
 
-          <p className="text-xs text-muted-foreground mt-4">
-            Kode HP ini (dibutuhkan saat beli):
-            <span className="font-mono text-foreground block mt-0.5 select-all">{getDeviceId()}</span>
-          </p>
+          <CopyDeviceCode className="mt-4" />
         </section>
         )}
 
