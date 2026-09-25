@@ -58,7 +58,7 @@ function DialogBody({ req }: { req: Req }) {
         onSubmit={(e) => { e.preventDefault(); finish(req.input ? text : true); }}
         className="px-6 pt-5 pb-5"
       >
-        <p className="font-semibold mb-4">{req.msg}</p>
+        <p className="font-semibold mb-4 whitespace-pre-line">{req.msg}</p>
         {req.input && (
           <input
             type={req.input.password ? 'password' : 'text'}

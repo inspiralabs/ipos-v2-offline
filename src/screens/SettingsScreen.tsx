@@ -21,7 +21,10 @@ import { exportBackup, importBackup } from '@/lib/backup';
 import { printReceipt } from '@/lib/receipt';
 import { Select } from '@/components/Select';
 import { toast } from '@/components/Toast';
-import { confirmDialog } from '@/components/dialogs';
+import { confirmDialog, promptDialog } from '@/components/dialogs';
+import { resetDevice } from '@/lib/device-reset';
+import { ensureDeviceRegistered } from '@/lib/sync';
+import { markLicenseRebindIfTrial } from '@/components/RestoreLicenseNotice';
 import { Modal } from '@/components/Modal';
 import { InstallCard } from '@/components/InstallCard';
 
@@ -102,7 +105,36 @@ export function SettingsScreen({ focus, onBack }: {
   async function handleImport(file: File) {
     if (!(await confirmDialog('Data yang ada sekarang akan diganti dengan isi file backup. Lanjutkan?', { danger: true, okLabel: 'Ganti Data' }))) return;
     const err = await importBackup(file);
-    setBackupMsg(err ?? 'Data berhasil dipulihkan dari backup!');
+    if (err) { setBackupMsg(err); return; }
+    markLicenseRebindIfTrial();
+    void ensureDeviceRegistered();
+    setBackupMsg('Data toko berhasil dipulihkan. Kode HP dan kode aktivasi tidak ikut dari file ini.');
+  }
+
+  async function handleReset() {
+    const storedPin = await getSetting(KEYS.ownerPin);
+    if (storedPin) {
+      const pin = await promptDialog('Masukkan PIN owner', {
+        password: true, numeric: true, placeholder: 'PIN 6 angka', okLabel: 'Lanjut',
+      });
+      if (!pin) return;
+      if ((await hashPin(pin)) !== storedPin) { toast('PIN salah.', 'error'); return; }
+    }
+    const warned = await confirmDialog(
+      'Reset menghapus toko di HP ini.\n\n• Data jualan hilang\n• Kode aktivasi lama tidak berlaku\n• HP mulai dari awal'
+      + (storedPin ? '' : '\n\nBelum ada PIN owner, jadi siapa pun yang memegang HP ini bisa mereset toko.'),
+      { danger: true, okLabel: 'Lanjut' },
+    );
+    if (!warned) return;
+    const saveCopy = await confirmDialog(
+      'Simpan salinan data dulu? File ini hanya berisi data toko, tanpa Kode HP dan kode aktivasi. Pilih Batal kalau salinan tidak diperlukan.',
+      { okLabel: 'Simpan dulu' },
+    );
+    if (saveCopy) await exportBackup();
+    const typed = await promptDialog('Ketik HAPUS untuk menghapus toko di HP ini.', { placeholder: 'HAPUS', okLabel: 'Hapus toko' });
+    if (!typed) return;
+    if (typed.trim().toUpperCase() !== 'HAPUS') { toast('Reset dibatalkan. Ketikan harus persis HAPUS.', 'error'); return; }
+    await resetDevice();
   }
 
   const isTrial = licState.plan === 'trial';
@@ -327,7 +359,7 @@ export function SettingsScreen({ focus, onBack }: {
           </h2>
           <p className="text-sm text-muted-foreground mb-4">
             Data cuma ada di HP ini. Simpan salinannya secara rutin, supaya kalau HP hilang atau rusak,
-            data jualan kamu nggak ikut hilang.
+            data jualan kamu nggak ikut hilang. Salinan ini hanya data toko. Kode HP dan kode aktivasi tidak ikut tersimpan.
           </p>
           <div className="flex gap-2">
             <button
@@ -355,6 +387,19 @@ export function SettingsScreen({ focus, onBack }: {
             />
           </div>
           {backupMsg && <p className="text-sm mt-2 text-muted-foreground">{backupMsg}</p>}
+          <div className="mt-5 pt-4 border-t border-border">
+            <h3 className="font-bold text-sm mb-1">Reset HP</h3>
+            <p className="text-sm text-muted-foreground mb-3">
+              Untuk ganti toko di HP ini. Semua data, Kode HP, dan lisensi dihapus. HP mulai dari awal.
+            </p>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="w-full border border-destructive text-destructive font-bold py-2.5 rounded-xl text-sm"
+            >
+              Reset HP ini
+            </button>
+          </div>
         </section>
         )}
 

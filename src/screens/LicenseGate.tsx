@@ -3,6 +3,7 @@ import { Hourglass, MessageCircle, ShieldCheck } from 'lucide-react';
 import { activateLicense, TRIAL_LIMITS, ADMIN_WA, waLink } from '@/lib/license';
 import { useLicenseStore } from '@/store/license';
 import { getDeviceId } from '@/lib/device';
+import { RestoreLicenseNotice } from '@/components/RestoreLicenseNotice';
 import { CopyDeviceCode } from '@/components/CopyDeviceCode';
 
 /**
@@ -35,7 +36,9 @@ export function LicenseGate() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center bg-background p-4">
+    <div className="min-h-dvh flex flex-col bg-background">
+      <RestoreLicenseNotice />
+      <div className="flex-1 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-sm bg-card rounded-2xl shadow-warm border border-border p-6">
         <div className="w-14 h-14 rounded-2xl bg-accent-soft text-accent flex items-center justify-center mb-4">
           <Hourglass className="w-7 h-7" aria-hidden />
@@ -94,6 +97,7 @@ export function LicenseGate() {
             </a>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

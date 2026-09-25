@@ -1,7 +1,8 @@
 import { db } from '@/db';
 import { setSetting, KEYS } from './store-settings';
 
-// Backup & pulihkan seluruh data ke/dari file JSON — PRD Offline §5.3 (Lite & Pro)
+// Salinan data toko saja. Kode HP dan kode aktivasi sengaja tidak ikut,
+// supaya satu file tidak bisa menghidupkan banyak toko berlisensi.
 const TABLES = [
   'menus', 'categories', 'orders', 'settings', 'shifts',
   'customers', 'debts', 'debt_payments', 'expenses', 'suppliers', 'users', 'stock_moves',
