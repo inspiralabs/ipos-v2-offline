@@ -42,4 +42,13 @@ export default defineConfig({
     }),
   ],
   resolve: { alias: { '@': path.resolve(__dirname, './src') } },
+  server: {
+    // Admin lokal (localhost:3010) membaca tenant-service ini, bukan API produksi.
+    proxy: {
+      '/api/clients': {
+        target: 'http://127.0.0.1:3002',
+        changeOrigin: true,
+      },
+    },
+  },
 });

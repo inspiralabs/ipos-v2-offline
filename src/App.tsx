@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { db } from '@/db';
 import { KEYS } from '@/lib/store-settings';
-import { checkLicenseStatus } from '@/lib/sync';
+import { checkLicenseStatus, ensureDeviceRegistered } from '@/lib/sync';
 import { applyTheme } from '@/lib/theme';
 import { useLicenseStore } from '@/store/license';
 import { useSessionStore } from '@/store/session';
@@ -104,10 +104,16 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  // Cek status trial ke server saat online (best-effort, PRD §5.3 step 4)
+  // Cek status trial + daftarkan kode HP saat ini. Dipanggil lagi saat koneksi balik.
   useEffect(() => {
-    checkLicenseStatus().then(refresh);
+    const sync = () => {
+      void ensureDeviceRegistered();
+      checkLicenseStatus().then(refresh);
+    };
+    sync();
+    window.addEventListener('online', sync);
     db.settings.get(KEYS.themeColor).then((v) => { if (v?.value) applyTheme(v.value); });
+    return () => window.removeEventListener('online', sync);
   }, [refresh]);
 
   // undefined = masih loading dari IndexedDB, jangan render apa pun dulu
