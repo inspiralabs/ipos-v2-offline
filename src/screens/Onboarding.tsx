@@ -7,8 +7,9 @@ import { db } from '@/db';
 import { BUSINESS_TYPES, seedBusinessType } from '@/lib/dummy';
 import { TRIAL_LIMITS } from '@/lib/license';
 import { setSetting, KEYS } from '@/lib/store-settings';
-import { registerClient } from '@/lib/sync';
+import { ensureDeviceRegistered, registerClient } from '@/lib/sync';
 import { importBackup } from '@/lib/backup';
+import { markLicenseRebindIfTrial } from '@/components/RestoreLicenseNotice';
 import { confirmDialog } from '@/components/dialogs';
 import { toast } from '@/components/Toast';
 import { InstallPopup } from '@/components/InstallPopup';
@@ -85,6 +86,8 @@ export function Onboarding({ onDone, tourOnly = false }: { onDone: () => void; t
     try {
       const err = await importBackup(file);
       if (err) { toast(err, 'error'); return; }
+      markLicenseRebindIfTrial();
+      void ensureDeviceRegistered();
       onDone();
     } finally {
       setRestoring(false);

@@ -13,6 +13,7 @@ import { useLicenseStore } from '@/store/license';
 import { useSessionStore } from '@/store/session';
 import { confirmDialog } from '@/components/dialogs';
 import { LicenseGate } from '@/screens/LicenseGate';
+import { RestoreLicenseNotice } from '@/components/RestoreLicenseNotice';
 import { LockScreen } from '@/screens/LockScreen';
 import { Onboarding } from '@/screens/Onboarding';
 import { HomeScreen } from '@/screens/HomeScreen';
@@ -144,6 +145,7 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-dvh">
+      <RestoreLicenseNotice />
       <header className="bg-card border-b border-border px-4 py-2.5 flex items-center gap-2 shrink-0 print:hidden">
         <h1 className="font-extrabold text-primary truncate flex-1">{storeName || 'Inspira POS'}</h1>
         {sessionUser && (
