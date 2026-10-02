@@ -15,11 +15,12 @@ const fromStr = (s: string) => new Date(s + 'T00:00:00');
  * Date picker bergaya shadcn (react-day-picker di dalam Radix Popover, animasi motion).
  * Nilai in/out tetap string YYYY-MM-DD — pemanggil lama tak berubah.
  */
-export function DatePicker({ value, onChange, max, label, portalContainer }: {
+export function DatePicker({ value, onChange, max, label, portalContainer, className = '' }: {
   value: string;
   onChange: (s: string) => void;
   max?: string;
   label?: string;
+  className?: string;
   /** Dipakai saat DatePicker ada di dalam Modal — tanpa ini, Radix Dialog akan menganggap
    * popover kalender (portal ke document.body) sebagai elemen "di luar" dan menonaktifkan
    * klik di dalamnya (lihat aria-hidden's hideOthers). Portal ke node di dalam Modal
@@ -35,7 +36,7 @@ export function DatePicker({ value, onChange, max, label, portalContainer }: {
         <button
           type="button"
           aria-label={label ?? 'Pilih tanggal'}
-          className="flex items-center gap-2 px-3 py-2 text-sm font-semibold bg-card hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px]"
+          className={`flex items-center gap-2 px-3 py-2 text-sm font-semibold bg-card hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary min-h-[40px] ${className}`}
         >
           <CalendarDays className="w-4 h-4 text-muted-foreground" aria-hidden />
           {selected.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}

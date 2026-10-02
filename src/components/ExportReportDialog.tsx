@@ -43,6 +43,7 @@ export function ExportReportDialog({ defaultStart, defaultEnd, onClose }: {
     <Modal ref={setModalCard} onClose={onClose}>
       <div className="px-6 pt-5 pb-4 border-b border-border">
         <h2 className="font-bold text-lg">Export Laporan</h2>
+        <p className="text-sm text-muted-foreground mt-1">Untuk tanggal yang sedang dibuka. Ubah tanggal kalau butuh beberapa hari. File-nya ikut memuat menu yang laku.</p>
       </div>
       <div className="px-6 py-4 space-y-3">
         <div>

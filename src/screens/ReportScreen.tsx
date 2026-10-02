@@ -7,7 +7,7 @@ import { useLicenseStore } from '@/store/license';
 import { hasFeature } from '@/lib/plan';
 import { askOwnerPin } from '@/lib/store-settings';
 import { printReceipt } from '@/lib/receipt';
-import { printClosingReport } from '@/lib/closing-report';
+import { printClosingReport, printDailyReport } from '@/lib/closing-report';
 import { ProGate } from '@/components/ProGate';
 import { Modal } from '@/components/Modal';
 import { RupiahInput } from '@/components/RupiahInput';
@@ -79,6 +79,8 @@ function SalesTab() {
   const [selBar, setSelBar] = useState<number | null>(null);
   const [showMarginInfo, setShowMarginInfo] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [exportStart, setExportStart] = useState(dateStr);
+  const [exportEnd, setExportEnd] = useState(dateStr);
 
   const dayStart = new Date(dateStr + 'T00:00:00').getTime();
   const dayEnd = dayStart + DAY_MS;
@@ -129,7 +131,7 @@ function SalesTab() {
       byProduct.set(it.product_name, cur);
     }
   }
-  const topProducts = [...byProduct.values()].sort((a, b) => b.qty - a.qty).slice(0, 5);
+  const topProducts = [...byProduct.values()].sort((a, b) => b.qty - a.qty);
 
   const rangePaid = rangeOrders.filter((o) => o.status === 'paid');
   const days = Array.from({ length: range }, (_, i) => {
@@ -149,6 +151,10 @@ function SalesTab() {
     new Date(ts).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
   const fmtDayShort = (ts: number) =>
     new Date(ts).toLocaleDateString('id-ID', { weekday: 'short' });
+  const viewingToday = dateStr === localDateStr();
+  const dayPhrase = viewingToday
+    ? 'hari ini'
+    : new Date(dayStart).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' });
 
   async function voidOrder(id: string) {
     if (!hasFeature(licState, 'void')) {
@@ -175,32 +181,49 @@ function SalesTab() {
     void printClosingReport(range, dayEnd, rangePaid, expenseTotal);
   }
 
+  function printDaily() {
+    void printDailyReport(dayStart, orders, dayExpenses);
+  }
+
+  function openExport(start: string, end: string) {
+    setExportStart(start);
+    setExportEnd(end);
+    setExportOpen(true);
+  }
+
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start max-w-lg md:max-w-3xl w-full mx-auto">
-      <div className="flex items-center gap-2 print:hidden md:col-span-2">
-        {/* Navigasi hari: kasir hampir selalu geser sehari-sehari; kalender native untuk lompat jauh */}
-        <div className="flex items-center bg-card border border-border rounded-xl overflow-hidden">
+      <div className="space-y-2 print:hidden md:col-span-2">
+        <div className="flex items-center bg-card border border-border rounded-xl overflow-hidden w-full">
           <button
             onClick={() => setDateStr(shiftDay(dateStr, -1))}
             aria-label="Hari sebelumnya"
-            className="w-9 h-10 flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted"
+            className="w-11 h-12 flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted"
           >
             <ChevronLeft className="w-4 h-4" aria-hidden />
           </button>
-          <DatePicker value={dateStr} onChange={setDateStr} max={localDateStr()} label="Pilih tanggal laporan" />
+          <div className="flex-1 min-w-0">
+            <DatePicker value={dateStr} onChange={setDateStr} max={localDateStr()} label="Pilih tanggal laporan" className="w-full justify-center min-h-[48px]" />
+          </div>
           <button
             onClick={() => setDateStr(shiftDay(dateStr, 1))}
             disabled={dateStr >= localDateStr()}
             aria-label="Hari berikutnya"
-            className="w-9 h-10 flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted disabled:opacity-30"
+            className="w-11 h-12 flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted disabled:opacity-30"
           >
             <ChevronRight className="w-4 h-4" aria-hidden />
           </button>
         </div>
-        <div className="ml-auto flex gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <button
-            onClick={() => setExportOpen(true)}
-            className="flex items-center gap-1.5 border border-border rounded-xl px-3 py-2 text-sm font-semibold hover:bg-muted"
+            onClick={printDaily}
+            className="flex items-center justify-center gap-1.5 bg-primary text-primary-foreground rounded-xl px-3 py-3 text-sm font-bold min-h-[48px]"
+          >
+            <Printer className="w-4 h-4" aria-hidden /> {viewingToday ? 'Cetak hari ini' : 'Cetak tanggal ini'}
+          </button>
+          <button
+            onClick={() => openExport(dateStr, dateStr)}
+            className="flex items-center justify-center gap-1.5 border border-border rounded-xl px-3 py-3 text-sm font-semibold hover:bg-muted min-h-[48px]"
           >
             <Download className="w-4 h-4" aria-hidden /> Export
           </button>
@@ -209,7 +232,7 @@ function SalesTab() {
 
       {/* Ringkasan hari */}
       <div className="bg-card rounded-2xl p-5 shadow-warm border border-border">
-        <p className="text-sm text-muted-foreground mb-1">Uang masuk hari ini</p>
+        <p className="text-sm text-muted-foreground mb-1">Uang masuk {dayPhrase}</p>
         <p className="text-3xl font-extrabold text-primary tabular-nums mb-3">{formatRp(totalSales)}</p>
         <div className="flex gap-4 text-sm flex-wrap">
           <span className="text-muted-foreground">{paid.length}x transaksi</span>
@@ -221,7 +244,7 @@ function SalesTab() {
       {/* Laba rugi sederhana */}
       {(totalHpp > 0 || totalExpense > 0) && (
         <div className="bg-card rounded-2xl p-5 shadow-warm border border-border space-y-2">
-          <h3 className="text-sm font-bold mb-1">Untung-rugi hari ini</h3>
+          <h3 className="text-sm font-bold mb-1">Untung-rugi {dayPhrase}</h3>
           <Row label="Omzet" value={formatRp(totalSales)} />
           <Row label="Modal terjual (HPP)" value={`−${formatRp(totalHpp)}`} />
           <Row
@@ -314,11 +337,12 @@ function SalesTab() {
             </button>
           ))}
         </div>
+        <p className="text-xs text-muted-foreground mt-3">Ini ringkasan beberapa hari, bukan laporan satu tanggal.</p>
         <button
           onClick={printClosing}
-          className="w-full mt-3 flex items-center justify-center gap-1.5 border border-border rounded-xl py-2.5 text-sm font-semibold hover:bg-muted print:hidden"
+          className="w-full mt-2 flex items-center justify-center gap-1.5 border border-border rounded-xl py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted print:hidden"
         >
-          <Printer className="w-4 h-4" aria-hidden /> Cetak Laporan Closing {range} Hari
+          <Printer className="w-4 h-4" aria-hidden /> Cetak ringkasan {range} hari
         </button>
       </div>
 
@@ -335,11 +359,11 @@ function SalesTab() {
         </div>
       )}
 
-      {/* Menu terlaris */}
       {topProducts.length > 0 && (
-        <div className="bg-card rounded-2xl p-5 shadow-warm border border-border">
-          <h3 className="text-sm font-bold mb-3">Paling laku hari ini</h3>
-          <div className="space-y-2.5">
+        <div className="bg-card rounded-2xl p-5 shadow-warm border border-border md:col-span-2">
+          <h3 className="text-sm font-bold mb-1">Menu yang laku {dayPhrase}</h3>
+          <p className="text-xs text-muted-foreground mb-3">{topProducts.length} menu · ikut tercetak dan ikut di file export.</p>
+          <div className="max-h-40 overflow-y-auto overscroll-contain space-y-2.5">
             {topProducts.map((p, i) => (
               <div key={p.name} className="flex items-center gap-3 text-sm">
                 <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${i === 0 ? 'bg-accent text-white' : 'bg-muted text-muted-foreground'}`}>
@@ -378,6 +402,7 @@ function SalesTab() {
       ) : (
         <div className="space-y-2 md:col-span-2">
           <h3 className="text-sm font-bold">Semua transaksi</h3>
+          <div className="max-h-[21rem] overflow-y-auto overscroll-contain space-y-2">
           {[...orders].filter((o) => o.status !== 'open').sort((a, b) => b.created_at - a.created_at).map((o) => (
             <div
               key={o.id}
@@ -409,14 +434,15 @@ function SalesTab() {
               )}
             </div>
           ))}
+          </div>
         </div>
       )}
 
       {showMarginInfo && <MarginInfoModal onClose={() => setShowMarginInfo(false)} />}
       {exportOpen && (
         <ExportReportDialog
-          defaultStart={dateStr}
-          defaultEnd={dateStr}
+          defaultStart={exportStart}
+          defaultEnd={exportEnd}
           onClose={() => setExportOpen(false)}
         />
       )}
@@ -501,7 +527,7 @@ function DebtTab() {
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="max-h-[21rem] overflow-y-auto overscroll-contain space-y-2">
           {debts.map((d) => (
             <div key={d.id} className="bg-card rounded-xl px-4 py-3 shadow-warm border border-border flex items-center gap-3">
               <div className="flex-1 min-w-0">
@@ -657,7 +683,7 @@ function ExpenseTab() {
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="max-h-[21rem] overflow-y-auto overscroll-contain space-y-2">
           {expenses.map((e) => (
             <div key={e.id} className="bg-card rounded-xl px-4 py-3 shadow-warm border border-border flex items-center gap-3">
               <div className="flex-1 min-w-0">
