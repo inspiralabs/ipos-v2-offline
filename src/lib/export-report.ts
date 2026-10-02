@@ -37,6 +37,47 @@ function fmtDate(ts: number): string {
 function fmtTime(ts: number): string {
   return new Date(ts).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 }
+function fileDate(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+}
+
+const DAY_MS = 86400_000;
+
+interface DayRow {
+  start: number;
+  count: number;
+  sales: number;
+  hpp: number;
+  expense: number;
+  net: number;
+}
+
+function soldMenus(orders: Order[]): [string, { qty: number; revenue: number }][] {
+  const byProduct = new Map<string, { qty: number; revenue: number }>();
+  for (const o of orders) {
+    for (const it of o.items) {
+      const cur = byProduct.get(it.product_name) ?? { qty: 0, revenue: 0 };
+      cur.qty += it.qty;
+      cur.revenue += it.price * it.qty - it.discount;
+      byProduct.set(it.product_name, cur);
+    }
+  }
+  return [...byProduct.entries()].sort((a, b) => b[1].qty - a[1].qty);
+}
+
+function dailyRows(orders: Order[], expenses: Expense[], start: number, end: number): DayRow[] {
+  const rows: DayRow[] = [];
+  for (let t = start; t < end; t += DAY_MS) {
+    const dayOrders = orders.filter((o) => o.created_at >= t && o.created_at < t + DAY_MS);
+    const dayExpenses = expenses.filter((e) => e.created_at >= t && e.created_at < t + DAY_MS);
+    const sales = dayOrders.reduce((s, o) => s + o.total, 0);
+    const hpp = dayOrders.reduce((s, o) => s + o.items.reduce((x, i) => x + i.hpp * i.qty, 0), 0);
+    const expense = dayExpenses.reduce((s, e) => s + e.amount, 0);
+    rows.push({ start: t, count: dayOrders.length, sales, hpp, expense, net: sales - hpp - expense });
+  }
+  return rows;
+}
 
 const HEADER_FILL = { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF6E150F' } };
 const HEADER_FONT = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -45,6 +86,8 @@ const PERCENT_FMT = '0.0%';
 
 export async function exportReportExcel(start: number, end: number): Promise<void> {
   const { storeName, orders, expenses, totalSales, totalHpp, totalExpense, byMethod } = await loadRangeData(start, end);
+  const days = dailyRows(orders, expenses, start, end);
+  const menus = soldMenus(orders);
   const grossProfit = totalSales - totalHpp;
   const netProfit = grossProfit - totalExpense;
 
@@ -88,7 +131,56 @@ export async function exportReportExcel(start: number, end: number): Promise<voi
     r.getCell(2).numFmt = CURRENCY_FMT;
   }
 
-  // --- Sheet 2: Transaksi & Pengeluaran ---
+  // --- Sheet 2: Rekap per hari ---
+  const daily = wb.addWorksheet('Rekap per Hari');
+  daily.columns = [
+    { header: 'Tanggal', width: 14 },
+    { header: 'Transaksi', width: 12 },
+    { header: 'Omzet', width: 16 },
+    { header: 'Modal (HPP)', width: 16 },
+    { header: 'Pengeluaran', width: 16 },
+    { header: 'Laba bersih', width: 16 },
+  ];
+  const dailyHeader = daily.getRow(1);
+  dailyHeader.font = HEADER_FONT;
+  dailyHeader.eachCell((c) => { c.fill = HEADER_FILL; });
+  daily.views = [{ state: 'frozen', ySplit: 1 }];
+  for (const d of days) {
+    const r = daily.addRow([fmtDate(d.start), d.count, d.sales, d.hpp, d.expense, d.net]);
+    for (const col of [3, 4, 5, 6]) r.getCell(col).numFmt = CURRENCY_FMT;
+  }
+  const dailyTotal = daily.addRow([
+    'TOTAL',
+    days.reduce((s, d) => s + d.count, 0),
+    days.reduce((s, d) => s + d.sales, 0),
+    days.reduce((s, d) => s + d.hpp, 0),
+    days.reduce((s, d) => s + d.expense, 0),
+    days.reduce((s, d) => s + d.net, 0),
+  ]);
+  dailyTotal.font = { bold: true };
+  for (const col of [3, 4, 5, 6]) dailyTotal.getCell(col).numFmt = CURRENCY_FMT;
+  dailyTotal.eachCell((c) => { c.border = { top: { style: 'thin' } }; });
+
+  const menuSheet = wb.addWorksheet('Menu Terjual');
+  menuSheet.columns = [
+    { header: 'Menu', width: 32 },
+    { header: 'Terjual', width: 12 },
+    { header: 'Omzet', width: 16 },
+  ];
+  const menuHeader = menuSheet.getRow(1);
+  menuHeader.font = HEADER_FONT;
+  menuHeader.eachCell((c) => { c.fill = HEADER_FILL; });
+  menuSheet.views = [{ state: 'frozen', ySplit: 1 }];
+  for (const [name, m] of menus) {
+    const r = menuSheet.addRow([name, m.qty, m.revenue]);
+    r.getCell(3).numFmt = CURRENCY_FMT;
+  }
+  const menuTotal = menuSheet.addRow(['TOTAL', menus.reduce((s, [, m]) => s + m.qty, 0), menus.reduce((s, [, m]) => s + m.revenue, 0)]);
+  menuTotal.font = { bold: true };
+  menuTotal.getCell(3).numFmt = CURRENCY_FMT;
+  menuTotal.eachCell((c) => { c.border = { top: { style: 'thin' } }; });
+
+  // --- Sheet 4: Transaksi & Pengeluaran ---
   const detail = wb.addWorksheet('Transaksi & Pengeluaran');
   detail.columns = [
     { header: 'Tanggal', key: 'date', width: 12 },
@@ -138,13 +230,15 @@ export async function exportReportExcel(start: number, end: number): Promise<voi
   const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `laporan-${start}-${end}.xlsx`;
+  a.download = `laporan-${fileDate(start)}-${fileDate(end - DAY_MS)}.xlsx`;
   a.click();
   URL.revokeObjectURL(a.href);
 }
 
 export async function exportReportPdf(start: number, end: number): Promise<void> {
   const { storeName, orders, expenses, totalSales, totalHpp, totalExpense } = await loadRangeData(start, end);
+  const days = dailyRows(orders, expenses, start, end);
+  const menus = soldMenus(orders);
   const grossProfit = totalSales - totalHpp;
   const netProfit = grossProfit - totalExpense;
 
@@ -180,6 +274,55 @@ export async function exportReportPdf(start: number, end: number): Promise<void>
   y += 4;
 
   const headerStyles = { fillColor: [110, 21, 15] as [number, number, number], textColor: 255 };
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('Rekap per Hari', 14, y);
+  autoTable(doc, {
+    startY: y + 3,
+    head: [['Tanggal', 'Transaksi', 'Omzet', 'Modal', 'Pengeluaran', 'Laba bersih']],
+    body: days.map((d) => [fmtDate(d.start), String(d.count), rp(d.sales), rp(d.hpp), rp(d.expense), rp(d.net)]),
+    foot: [[
+      'Total',
+      String(days.reduce((s, d) => s + d.count, 0)),
+      rp(days.reduce((s, d) => s + d.sales, 0)),
+      rp(days.reduce((s, d) => s + d.hpp, 0)),
+      rp(days.reduce((s, d) => s + d.expense, 0)),
+      rp(days.reduce((s, d) => s + d.net, 0)),
+    ]],
+    headStyles: headerStyles,
+    footStyles: { fillColor: [247, 242, 234], textColor: 20, fontStyle: 'bold' },
+    styles: { fontSize: 8 },
+    margin: { left: 14, right: 14 },
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- jspdf-autotable augments doc at runtime
+  y = (doc as any).lastAutoTable.finalY + 10;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('Menu yang laku', 14, y);
+  autoTable(doc, {
+    startY: y + 3,
+    head: [['Menu', 'Terjual', 'Omzet']],
+    body: menus.length
+      ? menus.map(([name, m]) => [name, String(m.qty), rp(m.revenue)])
+      : [['Tidak ada menu terjual', '', '']],
+    foot: [[
+      'Total',
+      String(menus.reduce((s, [, m]) => s + m.qty, 0)),
+      rp(menus.reduce((s, [, m]) => s + m.revenue, 0)),
+    ]],
+    headStyles: headerStyles,
+    footStyles: { fillColor: [247, 242, 234], textColor: 20, fontStyle: 'bold' },
+    styles: { fontSize: 9 },
+    margin: { left: 14, right: 14 },
+  });
+  y = (doc as any).lastAutoTable.finalY + 10;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('Transaksi', 14, y);
+  y += 3;
 
   autoTable(doc, {
     startY: y,
@@ -219,5 +362,5 @@ export async function exportReportPdf(start: number, end: number): Promise<void>
     });
   }
 
-  doc.save(`laporan-${start}-${end}.pdf`);
+  doc.save(`laporan-${fileDate(start)}-${fileDate(end - DAY_MS)}.pdf`);
 }
