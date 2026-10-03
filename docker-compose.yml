@@ -1,3 +1,5 @@
+# VPS Inspiralabs: app ipos-v2-offline → https://offline.inspirapos.biz.id (lewat Traefik, tanpa port publik).
+# VITE_* di-bake saat build dari .env server (sudo -u deploy nano /srv/apps/ipos-v2-offline/.env).
 services:
   offline:
     build:
@@ -7,5 +9,18 @@ services:
         VITE_SECURE_SALT_PRO: ${VITE_SECURE_SALT_PRO}
         VITE_API_URL: ${VITE_API_URL}
         VITE_ADMIN_WA: ${VITE_ADMIN_WA}
-    ports:
-      - "8081:80"
+    expose: ["80"]
+    restart: unless-stopped
+    networks: [edge]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ipos-v2-offline.rule=Host(`offline.inspirapos.biz.id`)
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+networks:
+  edge:
+    external: true
