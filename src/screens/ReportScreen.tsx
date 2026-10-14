@@ -225,7 +225,7 @@ function SalesTab() {
             onClick={() => openExport(dateStr, dateStr)}
             className="flex items-center justify-center gap-1.5 border border-border rounded-xl px-3 py-3 text-sm font-semibold hover:bg-muted min-h-[48px]"
           >
-            <Download className="w-4 h-4" aria-hidden /> Export
+            <Download className="w-4 h-4" aria-hidden /> Export / Share
           </button>
         </div>
       </div>
@@ -338,12 +338,20 @@ function SalesTab() {
           ))}
         </div>
         <p className="text-xs text-muted-foreground mt-3">Ini ringkasan beberapa hari, bukan laporan satu tanggal.</p>
-        <button
-          onClick={printClosing}
-          className="w-full mt-2 flex items-center justify-center gap-1.5 border border-border rounded-xl py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted print:hidden"
-        >
-          <Printer className="w-4 h-4" aria-hidden /> Cetak ringkasan {range} hari
-        </button>
+        <div className="grid grid-cols-2 gap-2 mt-2 print:hidden">
+          <button
+            onClick={printClosing}
+            className="flex items-center justify-center gap-1.5 border border-border rounded-xl py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted"
+          >
+            <Printer className="w-4 h-4" aria-hidden /> Cetak {range} hari
+          </button>
+          <button
+            onClick={() => openExport(shiftDay(dateStr, 1 - range), dateStr)}
+            className="flex items-center justify-center gap-1.5 border border-border rounded-xl py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted"
+          >
+            <Download className="w-4 h-4" aria-hidden /> Export / Share
+          </button>
+        </div>
       </div>
 
       {/* Per kasir */}
