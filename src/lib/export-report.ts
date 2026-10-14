@@ -84,7 +84,30 @@ const HEADER_FONT = { bold: true, color: { argb: 'FFFFFFFF' } };
 const CURRENCY_FMT = '#,##0';
 const PERCENT_FMT = '0.0%';
 
-export async function exportReportExcel(start: number, end: number): Promise<void> {
+// Cek sekali: browser ini bisa share file (Chrome Android/Windows, Safari) atau tidak.
+export const canShareFiles = typeof navigator !== 'undefined' && !!navigator.canShare?.({
+  files: [new File([''], 'x.pdf', { type: 'application/pdf' })],
+});
+
+async function deliver(blob: Blob, name: string, share: boolean): Promise<void> {
+  if (share) {
+    try {
+      await navigator.share({ files: [new File([blob], name, { type: blob.type })], title: name });
+      return;
+    } catch (e) {
+      // Batal dari menu share bukan error. NotAllowedError = aktivasi user kedaluwarsa karena file lama dibuat → jatuh ke download.
+      if ((e as Error).name === 'AbortError') return;
+      if ((e as Error).name !== 'NotAllowedError') throw e;
+    }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+export async function exportReportExcel(start: number, end: number, share = false): Promise<void> {
   const { storeName, orders, expenses, totalSales, totalHpp, totalExpense, byMethod } = await loadRangeData(start, end);
   const days = dailyRows(orders, expenses, start, end);
   const menus = soldMenus(orders);
@@ -228,14 +251,10 @@ export async function exportReportExcel(start: number, end: number): Promise<voi
 
   const buf = await wb.xlsx.writeBuffer();
   const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `laporan-${fileDate(start)}-${fileDate(end - DAY_MS)}.xlsx`;
-  a.click();
-  URL.revokeObjectURL(a.href);
+  await deliver(blob, `laporan-${fileDate(start)}-${fileDate(end - DAY_MS)}.xlsx`, share);
 }
 
-export async function exportReportPdf(start: number, end: number): Promise<void> {
+export async function exportReportPdf(start: number, end: number, share = false): Promise<void> {
   const { storeName, orders, expenses, totalSales, totalHpp, totalExpense } = await loadRangeData(start, end);
   const days = dailyRows(orders, expenses, start, end);
   const menus = soldMenus(orders);
@@ -362,5 +381,5 @@ export async function exportReportPdf(start: number, end: number): Promise<void>
     });
   }
 
-  doc.save(`laporan-${fileDate(start)}-${fileDate(end - DAY_MS)}.pdf`);
+  await deliver(doc.output('blob'), `laporan-${fileDate(start)}-${fileDate(end - DAY_MS)}.pdf`, share);
 }

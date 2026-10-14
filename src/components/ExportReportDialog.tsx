@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { FileSpreadsheet, FileText } from 'lucide-react';
+import { FileSpreadsheet, FileText, Download, Share2 } from 'lucide-react';
 import { Modal } from './Modal';
 import { DatePicker } from './DatePicker';
-import { exportReportExcel, exportReportPdf } from '@/lib/export-report';
+import { exportReportExcel, exportReportPdf, canShareFiles } from '@/lib/export-report';
 import { toast } from './Toast';
 
 function toRangeMs(startStr: string, endStr: string): [number, number] {
@@ -19,6 +19,7 @@ export function ExportReportDialog({ defaultStart, defaultEnd, onClose }: {
   const [startStr, setStartStr] = useState(defaultStart);
   const [endStr, setEndStr] = useState(defaultEnd);
   const [loading, setLoading] = useState<'excel' | 'pdf' | null>(null);
+  const [share, setShare] = useState(false);
   // Portal target untuk popover DatePicker — lihat komentar di Modal.tsx untuk alasannya.
   const [modalCard, setModalCard] = useState<HTMLDivElement | null>(null);
 
@@ -29,8 +30,8 @@ export function ExportReportDialog({ defaultStart, defaultEnd, onClose }: {
     setLoading(kind);
     try {
       const [start, end] = toRangeMs(startStr, endStr);
-      if (kind === 'excel') await exportReportExcel(start, end);
-      else await exportReportPdf(start, end);
+      if (kind === 'excel') await exportReportExcel(start, end, share);
+      else await exportReportPdf(start, end, share);
       onClose();
     } catch {
       toast('Gagal membuat file laporan. Coba lagi.', 'error');
@@ -54,6 +55,21 @@ export function ExportReportDialog({ defaultStart, defaultEnd, onClose }: {
           <label className="block text-sm font-medium mb-1.5">Sampai tanggal</label>
           <DatePicker value={endStr} onChange={setEndStr} label="Sampai tanggal" portalContainer={modalCard} />
         </div>
+        {canShareFiles && (
+          <div className="grid grid-cols-2 gap-1 bg-muted rounded-xl p-1" role="radiogroup" aria-label="Kirim file">
+            {([[false, 'Download', Download], [true, 'Share', Share2]] as const).map(([v, label, Icon]) => (
+              <button
+                key={label}
+                role="radio"
+                aria-checked={share === v}
+                onClick={() => setShare(v)}
+                className={`flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-semibold min-h-[40px] ${share === v ? 'bg-card shadow-warm text-foreground' : 'text-muted-foreground'}`}
+              >
+                <Icon className="w-4 h-4" aria-hidden /> {label}
+              </button>
+            ))}
+          </div>
+        )}
         {invalid && (
           <p className="text-sm text-destructive">Rentang tanggal tidak valid — tanggal awal harus sebelum atau sama dengan tanggal akhir.</p>
         )}
