@@ -44,7 +44,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
     title: 'Aplikasi & Keamanan',
     items: [
       { icon: ShieldCheck, label: 'PIN Owner', desc: 'Kunci aksi penting', screen: 'settings', opts: { focus: 'pin' } },
-      { icon: DownloadCloud, label: 'Amankan Data', desc: 'Backup & pulihkan', screen: 'settings', opts: { focus: 'backup' } },
+      { icon: DownloadCloud, label: 'Amankan Data', desc: 'Backup, pulihkan & ganti toko', screen: 'settings', opts: { focus: 'backup' } },
       { icon: KeyRound, label: 'Versi & Aktivasi', desc: 'Lite / Pro, kode lisensi', screen: 'settings', opts: { focus: 'license' } },
       { icon: BookOpen, label: 'Panduan', desc: 'Cara install, fitur & FAQ', screen: 'guide' },
       { icon: Smartphone, label: 'Install ke HP', desc: 'Pasang di layar utama', screen: 'settings', opts: { focus: 'install' } },

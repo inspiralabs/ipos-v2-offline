@@ -17,7 +17,7 @@ const FEATURES: Feature[] = [
   { icon: BarChart3, title: 'Laporan', desc: 'Omzet hari ini, menu paling laku, uang di laci.' },
   { icon: Clock, title: 'Shift Kasir', desc: 'Buka & tutup shift, tahu persis uang masuk selama jaga.' },
   { icon: Contact, title: 'Pelanggan & Hutang', desc: 'Catat nama, HP, dan cicilan yang belum lunas.' },
-  { icon: DownloadCloud, title: 'Amankan Data', desc: 'Backup ke file kapan saja — kalau ganti HP, tinggal pulihkan.' },
+  { icon: DownloadCloud, title: 'Amankan Data', desc: 'Backup ke file kapan saja — kalau ganti HP, tinggal pulihkan. Ganti toko juga dari sini.' },
 ];
 
 const STEPS = [
@@ -35,6 +35,10 @@ const FAQ = [
   {
     q: 'Kalau HP hilang atau ganti HP, data ikut hilang?',
     a: 'Kalau rutin backup (Lainnya → Amankan Data), data bisa dipulihkan di HP baru dari file backup itu. Tanpa backup, data hanya ada di HP yang lama.',
+  },
+  {
+    q: 'Mau pakai HP ini untuk toko lain?',
+    a: 'Buka Lainnya → Amankan Data, lalu tekan "Reset HP ini" di bagian paling bawah. Kamu akan ditawari simpan salinan data dulu — pilih "Simpan dulu" kalau data toko lama masih perlu. Setelah reset, semua data toko lama, Kode HP, dan kode aktivasi terhapus. HP mulai dari awal dengan Kode HP baru; kirim kode itu ke admin untuk mengaktifkan toko yang baru.',
   },
   {
     q: 'Ada batasan pemakaian di awal?',
