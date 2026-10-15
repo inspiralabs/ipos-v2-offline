@@ -180,7 +180,7 @@ export function PosScreen() {
                         </span>
                       )}
                       {lowStock && (
-                        <span className="absolute top-1 right-1 bg-warning text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                        <span className="absolute top-1 right-1 bg-warning text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
                           Sisa {p.stock}
                         </span>
                       )}

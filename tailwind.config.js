@@ -31,7 +31,7 @@ export default {
         foreground: palette.charcoal,
         card: palette.surface,
         muted: '#F0E4D6',
-        'muted-foreground': '#8A7B6F',
+        'muted-foreground': '#6B5A4E', // 6.3:1 di krem — mata 40+ di siang hari; jangan dipudarkan lagi
         primary: {
           // var(...) dengan fallback ke maroon default — pilihan tema disetel runtime, lihat lib/theme.ts
           DEFAULT: 'var(--color-primary, #6e150f)',
@@ -47,11 +47,15 @@ export default {
         success: '#15803D',
         warning: '#B45309',
         destructive: '#BB1C1C',
-        border: '#F0E4D6',
+        border: '#D8C6B2', // #F0E4D6 lama (1.2:1) nyaris hilang di bawah matahari
         disabled: {
           DEFAULT: '#E5D8C8',
           foreground: '#a89a8a',
         },
+      },
+      fontSize: {
+        // 13px, bukan 12px default: teks terkecil di app tetap terbaca tanpa kacamata baca.
+        xs: ['0.8125rem', { lineHeight: '1.125rem' }],
       },
       borderRadius: {
         xl: '0.875rem',

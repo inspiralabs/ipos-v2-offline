@@ -203,7 +203,7 @@ export default function App() {
                 >
                   <Icon className="w-6 h-6" strokeWidth={2.25} aria-hidden />
                 </motion.span>
-                <span className={`text-[11px] pb-1.5 ${active ? 'text-primary font-bold' : 'text-muted-foreground font-medium'}`}>
+                <span className={`text-xs pb-1.5 ${active ? 'text-primary font-bold' : 'text-muted-foreground font-medium'}`}>
                   {n.label}
                 </span>
               </button>
@@ -215,7 +215,7 @@ export default function App() {
               key={n.id}
               onClick={() => go(n.id)}
               aria-current={active ? 'page' : undefined}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2 min-h-[56px] text-[11px] font-medium transition active:scale-95 ${
+              className={`flex-1 flex flex-col items-center gap-0.5 py-2 min-h-[56px] text-xs font-medium transition active:scale-95 ${
                 active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
