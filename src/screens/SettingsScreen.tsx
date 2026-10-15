@@ -242,7 +242,7 @@ export function SettingsScreen({ focus, onBack }: {
                 >
                   {themeId === t.id && <Check className="w-4 h-4 text-white" aria-hidden />}
                 </span>
-                <span className="text-[11px] text-muted-foreground">{t.label}</span>
+                <span className="text-xs text-muted-foreground">{t.label}</span>
               </button>
             ))}
           </div>

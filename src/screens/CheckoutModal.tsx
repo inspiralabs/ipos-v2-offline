@@ -10,8 +10,10 @@ import { hasFeature } from '@/lib/plan';
 import { formatRp } from '@/lib/format';
 import { printReceipt, shareReceipt, shareReceiptImage } from '@/lib/receipt';
 import { getSetting, KEYS } from '@/lib/store-settings';
+import { voidOrder } from '@/lib/void-order';
 import { Modal } from '@/components/Modal';
 import { RupiahInput } from '@/components/RupiahInput';
+import { toast } from '@/components/Toast';
 
 const METHOD_LABEL: Record<PayMethod, string> = { cash: 'Tunai', qris: 'QRIS', transfer: 'Transfer', debt: 'Hutang' };
 
@@ -38,6 +40,14 @@ export function CheckoutModal({ onClose }: { onClose: () => void }) {
   const [done, setDone] = useState<Order | null>(null);
   const [qrisImage, setQrisImage] = useState('');
   const [qrisZoom, setQrisZoom] = useState(false);
+  // Jendela urungkan setelah bayar — semua versi, supaya salah input bisa langsung dibetulkan.
+  const [undoLeft, setUndoLeft] = useState(0);
+
+  useEffect(() => {
+    if (undoLeft <= 0) return;
+    const t = setTimeout(() => setUndoLeft((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [undoLeft]);
 
   const canDebt = hasFeature(licState, 'customers_debt');
   const customers = useLiveQuery(() => db.customers.toArray(), []) ?? [];
@@ -113,9 +123,26 @@ export function CheckoutModal({ onClose }: { onClose: () => void }) {
       if (ls.plan === 'trial') saveLicenseState({ ...ls, txCount: ls.txCount + 1 });
 
       setDone(order);
+      setUndoLeft(10);
     } finally {
       setLoading(false);
     }
+  }
+
+  // Batalkan transaksi yang barusan dibayar, lalu kembali ke layar bayar dengan keranjang utuh.
+  async function undoPay() {
+    if (!done) return;
+    await voidOrder(done);
+    // Bill tersimpan yang dibuka lagi: kembalikan jadi bill terbuka, bukan hilang sebagai transaksi batal.
+    if (resumedOrderId) await db.orders.update(done.id, { status: 'open' });
+    if (done.customer_id != null) {
+      await db.debts.where('customer_id').equals(done.customer_id).and((d) => d.order_id === done.id).delete();
+    }
+    const ls = getLicenseState();
+    if (ls.plan === 'trial') saveLicenseState({ ...ls, txCount: Math.max(0, ls.txCount - 1) });
+    setUndoLeft(0);
+    setDone(null);
+    toast('Transaksi dibatalkan. Silakan ulangi pembayaran.', 'success');
   }
 
   function closeDone() {
@@ -171,6 +198,14 @@ export function CheckoutModal({ onClose }: { onClose: () => void }) {
           >
             Transaksi Berikutnya
           </button>
+          {undoLeft > 0 && (
+            <button
+              onClick={undoPay}
+              className="w-full mt-2 border border-destructive text-destructive font-bold py-3 rounded-xl text-sm min-h-[48px] tabular-nums"
+            >
+              Salah input? Batalkan transaksi ({undoLeft})
+            </button>
+          )}
         </div>
       </Modal>
     );

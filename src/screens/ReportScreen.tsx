@@ -8,6 +8,7 @@ import { hasFeature } from '@/lib/plan';
 import { askOwnerPin } from '@/lib/store-settings';
 import { printReceipt } from '@/lib/receipt';
 import { printClosingReport, printDailyReport } from '@/lib/closing-report';
+import { voidOrder as voidOrderRecord } from '@/lib/void-order';
 import { ProGate } from '@/components/ProGate';
 import { Modal } from '@/components/Modal';
 import { RupiahInput } from '@/components/RupiahInput';
@@ -166,14 +167,7 @@ function SalesTab() {
     if (pin === 'wrong') { toast('PIN salah.', 'error'); return; }
     if (!(await confirmDialog('Batalkan transaksi ini? Stok akan dikembalikan.', { danger: true, okLabel: 'Batalkan' }))) return;
     const order = await db.orders.get(id);
-    if (!order) return;
-    await db.orders.update(id, { status: 'void' });
-    for (const it of order.items) {
-      const menu = await db.menus.get(it.product_id);
-      if (menu?.stock != null) {
-        await db.menus.update(menu.id, { stock: menu.stock + it.qty, updated_at: Date.now() });
-      }
-    }
+    if (order) await voidOrderRecord(order);
   }
 
   function printClosing() {
@@ -330,7 +324,7 @@ function SalesTab() {
                 style={{ height: `${Math.max(3, (d.total / maxDay) * 100)}%` }}
               />
               {range === 7 && (
-                <span className={`text-[10px] ${d.start === dayStart ? 'font-bold text-primary' : 'text-muted-foreground'}`}>
+                <span className={`text-xs ${d.start === dayStart ? 'font-bold text-primary' : 'text-muted-foreground'}`}>
                   {fmtDayShort(d.start)}
                 </span>
               )}
@@ -420,7 +414,7 @@ function SalesTab() {
                 <p className={`text-sm font-bold tabular-nums ${o.status === 'void' ? 'line-through text-muted-foreground' : ''}`}>
                   {formatRp(o.total)}
                 </p>
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-xs text-muted-foreground">
                   {fmtTime(o.created_at)} · {o.items.reduce((n, i) => n + i.qty, 0)} item · {METHOD_LABEL[o.payment_method] ?? o.payment_method}
                   {o.customer_name ? ` · ${o.customer_name}` : ''} · {o.cashier_name}
                 </p>
