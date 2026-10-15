@@ -388,7 +388,7 @@ export function SettingsScreen({ focus, onBack }: {
           </div>
           {backupMsg && <p className="text-sm mt-2 text-muted-foreground">{backupMsg}</p>}
           <div className="mt-5 pt-4 border-t border-border">
-            <h3 className="font-bold text-sm mb-1">Reset HP</h3>
+            <h3 className="font-bold text-sm mb-1">Ganti toko / Reset HP</h3>
             <p className="text-sm text-muted-foreground mb-3">
               Untuk ganti toko di HP ini. Semua data, Kode HP, dan lisensi dihapus. HP mulai dari awal.
             </p>
